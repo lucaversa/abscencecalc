@@ -8,46 +8,8 @@ import datetime
 import logging
 from flask_session import Session
 import tempfile
-import time
 
 from scraper import scrape_portal
-
-import os
-import sys
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Log system information
-logger.info(f"Python version: {sys.version}")
-logger.info(f"Current working directory: {os.getcwd()}")
-logger.info(f"Directory contents: {os.listdir('.')}")
-logger.info(f"Current PATH: {os.environ['PATH']}")
-
-# Test Chrome
-chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
-if os.path.exists(chrome_path):
-    logger.info(f"Chrome found at {chrome_path}")
-    try:
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.binary_location = chrome_path
-        
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        driver.get("https://www.google.com")
-        logger.info(f"Chrome test successful. Page title: {driver.title}")
-        driver.quit()
-    except Exception as e:
-        logger.error(f"Chrome test failed: {e}")
-else:
-    logger.error(f"Chrome not found at {chrome_path}")
 
 app = Flask(__name__)
 
@@ -91,14 +53,8 @@ def login():
 
 @app.route('/process-login', methods=['POST'])
 def process_login():
-
-    logging.debug("Iniciando process_login")
-    start_time = time.time()
-
     username = request.form.get('username')
     password = request.form.get('password')
-
-    logging.debug(f"Tempo decorrido: {time.time() - start_time:.2f}s - Verificando credenciais")
     
     # Verificar se os campos de usuário e senha foram preenchidos
     if not username or not password:
@@ -107,15 +63,11 @@ def process_login():
     
     # Chamar a função de scraping
     try:
-        logging.debug(f"Tempo decorrido: {time.time() - start_time:.2f}s - Iniciando scraping")
         data1, data2 = scrape_portal(username, password)
-        logging.debug(f"Tempo decorrido: {time.time() - start_time:.2f}s - Scraping concluído")
         logging.debug(f"Scrape Portal retornou data1: {data1}, data2: {data2}")
         
         # Armazene data2 na sessão
         session['horario_data'] = data2
-
-        logging.debug(f"Tempo decorrido: {time.time() - start_time:.2f}s - Processando dados")
         
     except Exception as e:
         logging.error(f"Exceção durante o scraping: {e}")

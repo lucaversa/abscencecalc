@@ -1,0 +1,326 @@
+<!-- templates/simulador.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Faltas</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .table-striped-row {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .bg-danger.text-white .faltas-alteradas {
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .faltas-alteradas {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .toggle-all {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body class="simulador-page fade-in">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-calendar-alt"></i> AbscenceCalc
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Lista de Links Centralizados -->
+            <div class="navbar-center">
+                <ul class="navbar-nav">
+                    <li class="nav-item {% if request.endpoint == 'resultado' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('resultado') }}">
+                            <i class="fas fa-chart-bar"></i> Controle de Faltas
+                            {% if request.endpoint == 'resultado' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'simulador' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('simulador') }}">
+                            <i class="fas fa-calculator"></i> Simulador de Falta
+                            {% if request.endpoint == 'simulador' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!-- Botão "Sair" Alinhado à Direita -->
+            <span class="navbar-text">
+                <a href="{{ url_for('logout') }}" class="btn btn-sair">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Mensagens Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mt-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="container-fluid resultados-background vh-100">
+        <div class="container mt-5">
+            <div class="card resultado-card mb-4">
+                <div class="card-body">
+                    <form id="simulador-form">
+                        <div id="datas-container">
+                            <div class="data-entry mb-4">
+                                <div class="form-group">
+                                    <label><strong>Data da Falta</strong></label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control data-falta" required>
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-danger remove-data">Remover</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="disciplinas-container" style="display: none;">
+                                    <h4 class="mt-2">Disciplinas do dia:</h4>
+                                    <button type="button"
+                                        class="btn btn-secondary btn-sm mb-2 toggle-all">Selecionar/Deselecionar
+                                        Todos</button>
+                                    <div class="disciplinas-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="add-data" class="btn btn-secondary mb-3">Adicionar Outra Data</button>
+                        <button type="submit" class="btn btn-simular btn-block mt-4">Simular Falta</button>
+                    </form>
+
+                    <div id="resultado-simulacao" class="mt-4" style="display: none;">
+                        <h3>Resultado da Simulação</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Disciplina</th>
+                                        <th>Faltas (Atual → Simulada)</th>
+                                        <th>% de Faltas (Atual → Simulada)</th>
+                                        <th>Faltas Permitidas Restantes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultado-tabela">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- jQuery e Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts para o Simulador -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('simulador-form');
+            const datasContainer = document.getElementById('datas-container');
+            const addDataButton = document.getElementById('add-data');
+            const resultadoDiv = document.getElementById('resultado-simulacao');
+            const resultadoTabela = document.getElementById('resultado-tabela');
+
+            function createDataEntry() {
+                const dataEntry = document.createElement('div');
+                dataEntry.className = 'data-entry mb-4';
+                dataEntry.innerHTML = `
+                    <div class="form-group">
+                        <label><strong>Data da Falta</strong></label>
+                        <div class="input-group">
+                            <input type="date" class="form-control data-falta" required>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-danger remove-data">Remover</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="disciplinas-container" style="display: none;">
+                        <h4 class="mt-2">Disciplinas do dia:</h4>
+                        <button type="button" class="btn btn-secondary btn-sm mb-2 toggle-all">Selecionar/Deselecionar Todos</button>
+                        <div class="disciplinas-list"></div>
+                    </div>
+                `;
+                return dataEntry;
+            }
+
+            addDataButton.addEventListener('click', function () {
+                datasContainer.appendChild(createDataEntry());
+            });
+
+            datasContainer.addEventListener('click', function (e) {
+                if (e.target.classList.contains('remove-data')) {
+                    e.target.closest('.data-entry').remove();
+                } else if (e.target.classList.contains('toggle-all')) {
+                    const checkboxes = e.target.closest('.disciplinas-container').querySelectorAll('input[type="checkbox"]');
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    checkboxes.forEach(cb => cb.checked = !allChecked);
+                }
+            });
+
+            function isDateAlreadySelected(date, currentInput) {
+                const selectedDates = Array.from(datasContainer.querySelectorAll('.data-falta'))
+                    .filter(input => input !== currentInput)
+                    .map(input => input.value);
+                return selectedDates.includes(date);
+            }
+
+            datasContainer.addEventListener('change', function (e) {
+                if (e.target.classList.contains('data-falta')) {
+                    const selectedDate = e.target.value;
+                    if (isDateAlreadySelected(selectedDate, e.target)) {
+                        alert('Esta data já foi selecionada. Por favor, escolha outra data.');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    const dataEntry = e.target.closest('.data-entry');
+                    const disciplinasContainer = dataEntry.querySelector('.disciplinas-container');
+                    const disciplinasList = dataEntry.querySelector('.disciplinas-list');
+
+                    fetch('/get_disciplinas_por_data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            data: selectedDate
+                        }),
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(err => { throw err; });
+                            }
+                            return response.json();
+                        })
+                        .then(disciplinas => {
+                            disciplinasList.innerHTML = '';
+                            if (disciplinas.length === 0) {
+                                disciplinasList.innerHTML = '<p>Não foram encontradas aulas para este dia.</p>';
+                            } else {
+                                disciplinas.forEach(disciplina => {
+                                    const div = document.createElement('div');
+                                    div.className = 'form-check';
+                                    div.innerHTML = `
+                                        <input class="form-check-input" type="checkbox" value="${disciplina.nome}" id="${disciplina.nome}-${selectedDate}" checked>
+                                        <label class="form-check-label" for="${disciplina.nome}-${selectedDate}">
+                                            ${disciplina.nome} - ${disciplina.quantidade} aula(s)
+                                        </label>
+                                    `;
+                                    disciplinasList.appendChild(div);
+                                });
+                            }
+                            disciplinasContainer.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Erro detalhado:', error);
+                            alert('Erro ao carregar disciplinas. Por favor, tente novamente. Detalhes: ' + JSON.stringify(error));
+                        });
+                }
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const datasFaltas = Array.from(form.querySelectorAll('.data-entry')).map(entry => {
+                    const dataInput = entry.querySelector('.data-falta');
+                    return {
+                        data: dataInput.value,
+                        disciplinas: Array.from(entry.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+                    };
+                });
+
+                fetch('/simular_falta', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ datas_faltas: datasFaltas }),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw err; });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        resultadoTabela.innerHTML = '';
+                        data.sort((a, b) => b.porcentagem_faltas - a.porcentagem_faltas);
+                        data.forEach((disciplina, index) => {
+                            const row = document.createElement('tr');
+                            const faltasAtuais = disciplina.faltas_atuais;
+                            const faltasSimuladas = disciplina.faltas;
+                            const porcentagemAtual = disciplina.porcentagem_faltas_atual.toFixed(2);
+                            const porcentagemSimulada = disciplina.porcentagem_faltas.toFixed(2);
+                            const faltasCell = faltasAtuais !== faltasSimuladas ?
+                                `<span class="faltas-alteradas">${faltasAtuais} → ${faltasSimuladas}</span>` :
+                                `${faltasAtuais}`;
+                            const porcentagemCell = porcentagemAtual !== porcentagemSimulada ?
+                                `<span class="faltas-alteradas">${porcentagemAtual}% → ${porcentagemSimulada}%</span>` :
+                                `${porcentagemAtual}%`;
+                            row.innerHTML = `
+                                <td>${disciplina.nome_materia}</td>
+                                <td>${faltasCell}</td>
+                                <td>${porcentagemCell}</td>
+                                <td>${disciplina.faltas_permitidas_info}</td>
+                            `;
+                            if (disciplina.porcentagem_faltas > 25) {
+                                row.classList.add('bg-danger', 'text-white');
+                            } else if (index % 2 === 0) {
+                                row.classList.add('table-striped-row');
+                            }
+                            resultadoTabela.appendChild(row);
+                        });
+                        resultadoDiv.style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Erro:', error);
+                        alert('Erro ao simular falta. Por favor, tente novamente. Detalhes: ' + JSON.stringify(error));
+                    });
+            });
+        });
+    </script>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Este site foi desenvolvido por Milton Frota (80 D), caso desejem entrar com
+                processo
+                judicial favor me contatar.</span>
+        </div>
+    </footer>
+
+</body>
+
+</html>

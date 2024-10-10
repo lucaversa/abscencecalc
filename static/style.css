@@ -1,0 +1,695 @@
+/* static/style.css */
+
+/* Importar as fontes Roboto e Montserrat do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Montserrat:wght@400;600;700&display=swap');
+
+
+/* Variáveis de Cor */
+:root {
+    --primary-color: #00b3b3;
+    --primary-hover: #1e9b95;
+    --text-color: #333333;
+    --background-gradient: linear-gradient(135deg, #00b3b3, #008080);
+    --card-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    --card-hover-shadow: rgba(0, 0, 0, 0.2) 0px 8px 24px;
+    --header-bg-color: #006D6F;
+    /* Nova cor da navbar (removida para gradiente) */
+    --danger-color: #dc3545;
+    --sair-color: #008e8e;
+    /* Cor verde-turquesa para o botão Sair */
+    --sair-hover: #1aa89f;
+    /* Cor ao passar o mouse */
+    --active-link-color: #F9B233;
+    /* Cor laranja/dourado para link ativo */
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+    background: var(--background-gradient);
+    background-size: cover;
+    background-attachment: fixed;
+    overflow-x: hidden;
+    padding-top: 70px;
+    /* Espaço para a navbar fixa */
+}
+
+.content-wrapper {
+    flex: 1 0 auto;
+}
+
+.footer {
+    flex-shrink: 0;
+    background-color: #f8f9fa;
+    padding: 20px 0;
+    margin-top: auto;
+}
+
+
+/* Corpo da Página */
+body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--background-gradient);
+    background-size: cover;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: 70px;
+    /* Espaço para a navbar fixa */
+}
+
+/* Aplicar a fonte Montserrat a todos os títulos principais */
+h1,
+h2 {
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Títulos específicos */
+h1 {
+    color: #ffffff;
+    /* Mantém branco */
+    margin-bottom: 40px;
+    font-weight: 700;
+    text-align: center;
+    font-size: 3rem;
+    /* Aumento do tamanho da fonte */
+}
+
+h2 {
+    color: #ffffff;
+    /* Para h2 dentro da navbar e outros elementos */
+    font-weight: 600;
+    font-size: 1.8rem;
+}
+
+/* Backgrounds específicos */
+.login-background,
+.resultados-background {
+    min-height: calc(100vh - 70px);
+    /* Subtrai a altura da navbar */
+    width: 100%;
+    position: relative;
+}
+
+.login-card {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+    /* Mantém o card de login estático sem hover */
+}
+
+.login-card h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #333;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-card p {
+    font-weight: 400;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.login-card p.info-bold {
+    font-weight: 700;
+    color: #333;
+}
+
+.login-card .form-control {
+    border-radius: 10px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card .form-control:focus {
+    border-color: #20b2aa;
+    box-shadow: 0 0 0 0.2rem rgba(32, 178, 170, 0.25);
+}
+
+.login-card label {
+    font-weight: 700;
+    color: #333;
+}
+
+.login-card .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    padding: 12px 25px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.login-card .btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-3px);
+}
+
+.login-card .btn-primary:focus,
+.login-card .btn-primary:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+#loading-spinner {
+    display: none;
+}
+
+#loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+    border-color: rgba(32, 178, 170, 0.25);
+    border-top-color: #20b2aa;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+#loading-spinner p {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #20b2aa;
+}
+
+@keyframes glow {
+    0% {
+        text-shadow: 0 0 5px #fff, 0 0 10px #20b2aa, 0 0 15px #20b2aa, 0 0 20px #87e8de;
+    }
+
+    100% {
+        text-shadow: 0 0 10px #fff, 0 0 20px #20b2aa, 0 0 30px #20b2aa, 0 0 40px #87e8de;
+    }
+}
+
+.card {
+    margin-bottom: 40px;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.resultado-card:hover {
+    transform: translateY(-7px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.card-header {
+    padding: 25px;
+    /* background-color: var(--header-bg-color); */
+    /* Removido para permitir gradiente */
+    color: #ffffff;
+}
+
+.card-body {
+    padding: 25px;
+    background-color: #f9f9f9;
+}
+
+.card-body p {
+    margin-bottom: 20px;
+    color: #555;
+    font-size: 1.05rem;
+}
+
+.table {
+    margin-top: 25px;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+    text-align: center;
+    font-weight: 400;
+    font-size: 1rem;
+    border: none;
+}
+
+.table th {
+    background-color: #343a40;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.table td:nth-child(3),
+.table td:nth-child(4) {
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.container {
+    max-width: 1200px;
+    padding-bottom: 20px;
+    /* Reduzido de 50px para dar espaço ao rodapé */
+}
+
+/* Adicione esta nova regra para o texto do rodapé */
+.footer .text-muted {
+    font-size: 0.9rem;
+    color: #6c757d !important;
+}
+
+@keyframes spinner-border {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.fade-in {
+    animation: fadeInPage 0.5s forwards;
+}
+
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Estilos adicionais para responsividade */
+@media (max-width: 767.98px) {
+    .login-card {
+        padding: 25px;
+    }
+
+    .table td {
+        font-size: 0.9rem;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    .card-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .card-body p {
+        font-size: 1rem;
+    }
+}
+
+.alert-container {
+    position: relative;
+    z-index: 10;
+}
+
+/* Estilos Personalizados para as Mensagens de Alerta */
+.alert {
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+    position: relative;
+    /* Remove background-color if you want to set it per alert type */
+}
+
+.alert-success {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+    border-left: 5px solid #198754 !important;
+}
+
+.alert-danger,
+.alert-error {
+    /* Adicionado .alert-error para lidar com possíveis categorias */
+    background-color: #f8d7da !important;
+    /* Tonalidade avermelhada mais moderna */
+    color: #842029 !important;
+    border-left: 5px solid #dc3545 !important;
+}
+
+.alert-warning {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    border-left: 5px solid #ffc107 !important;
+}
+
+.alert-info {
+    background-color: #cff4fc !important;
+    color: #055160 !important;
+    border-left: 5px solid #0dcaf0 !important;
+}
+
+.alert-dismissible .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: inherit;
+}
+
+.animate__animated {
+    --animate-duration: 0.5s;
+}
+
+/* Remover a borda e ajustar a sombra para o contêiner de login */
+.login-card {
+    border: none !important;
+    box-shadow: var(--card-shadow) !important;
+}
+
+/* Estilos para o botão Sair */
+.btn-sair {
+    background-color: var(--sair-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    padding: 12px 25px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.btn-sair:hover {
+    background-color: var(--sair-hover);
+    transform: translateY(-3px);
+}
+
+.btn-sair:focus,
+.btn-sair:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Estilos Personalizados para a Navbar */
+.custom-navbar {
+    background-color: var(--header-bg-color);
+    /* Define a cor sólida da navbar */
+    font-family: 'Roboto', sans-serif;
+    /* Fonte moderna */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Sombra sutil */
+    transition: background 0.3s ease;
+    position: fixed;
+    /* Tornar a navbar fixa no topo */
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    /* Garantir que a navbar fique acima de outros elementos */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-navbar .navbar-brand {
+    font-family: 'Montserrat', sans-serif;
+    /* Mantém a fonte Montserrat para o logo */
+    font-weight: 700;
+    color: #FFFFFF !important;
+    /* Cor branca para o texto do logo */
+    display: flex;
+    align-items: center;
+}
+
+.custom-navbar .navbar-brand i {
+    margin-right: 8px;
+    /* Espaço entre o ícone e o texto */
+    font-size: 1.5rem;
+}
+
+/* Centralização dos Links da Navbar */
+.navbar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.custom-navbar .navbar-nav {
+    display: flex;
+    justify-content: center;
+}
+
+.custom-navbar .navbar-nav .nav-link {
+    color: #FFFFFF !important;
+    /* Texto dos links em branco */
+    font-weight: 500;
+    margin: 0 15px;
+    /* Espaçamento horizontal entre os links */
+    font-family: 'Montserrat', sans-serif;
+    /* Define a fonte Montserrat para os links */
+    transition: color 0.3s ease, transform 0.3s ease;
+    position: relative;
+    /* Para posicionar o separador */
+}
+
+/* Remover a margem direita do último item */
+.custom-navbar .navbar-nav .nav-link:last-child {
+    margin-right: 0;
+}
+
+/* Adicionar separador entre os links */
+.custom-navbar .navbar-nav .nav-link:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -7.5px;
+    /* Metade da margem para centralizar o separador */
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.5);
+    /* Cor discreta do separador */
+}
+
+/* Hover nos links da navbar */
+.custom-navbar .navbar-nav .nav-link:hover {
+    color: var(--primary-hover) !important;
+    /* Cor ao passar o mouse */
+    transform: scale(1.05);
+    /* Leve aumento no tamanho */
+}
+
+/* Link ativo na navbar */
+.custom-navbar .navbar-nav .nav-item.active .nav-link {
+    color: var(--active-link-color) !important;
+    /* Cor do link ativo */
+    font-weight: 700;
+    border-bottom: 2px solid var(--active-link-color) !important;
+    /* Linha abaixo do link ativo */
+    background-color: transparent !important;
+    /* Remover qualquer cor de fundo */
+}
+
+/* Estilização do botão de toggle (hambúrguer) */
+.custom-navbar .navbar-toggler {
+    border-color: #FFFFFF;
+    /* Botão de toggle com borda branca */
+}
+
+.custom-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+/* Alinhamento do Botão "Sair" */
+.custom-navbar .navbar-text {
+    margin-left: auto;
+    /* Empurra o botão "Sair" para a direita */
+}
+
+.custom-navbar .btn-sair {
+    font-weight: 500;
+    color: #FFFFFF;
+    background-color: var(--sair-color);
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.custom-navbar .btn-sair:hover {
+    background-color: var(--sair-hover);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 767.98px) {
+    .custom-navbar .navbar-nav .nav-link {
+        margin: 10px 0;
+        /* Ajustar margem vertical em dispositivos móveis */
+    }
+
+    /* Remover o separador em dispositivos móveis para evitar sobreposição */
+    .custom-navbar .navbar-nav .nav-link:not(:last-child)::after {
+        display: none;
+    }
+
+    .custom-navbar .btn-sair {
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+        /* Espaçamento acima do botão "Sair" */
+    }
+
+    /* Ajustar a posição da navbar-center no modo colapsado */
+    .navbar-center {
+        position: static;
+        transform: none;
+        margin-top: 10px;
+    }
+}
+
+/* Aumentar a altura da barra de progresso */
+.progress {
+    height: 25px;
+    /* Aumenta a altura conforme necessário */
+}
+
+/* Estilizar a barra de progresso */
+.progress-bar {
+    font-weight: bold;
+    /* Torna o texto em negrito */
+    color: #ffffff;
+    /* Cor do texto para melhor contraste */
+    font-size: 1rem;
+    /* Tamanho da fonte ajustável */
+    text-align: center;
+    /* Centraliza o texto dentro da barra */
+    transition: width 0.6s ease, background 0.6s ease;
+    /* Transições suaves */
+}
+
+/* Estilos específicos para o simulador */
+body,
+input,
+button,
+select,
+textarea {
+    font-family: 'Montserrat', sans-serif;
+}
+
+.btn-simular {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    padding: 12px 25px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.btn-simular:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-3px);
+}
+
+.btn-simular:focus,
+.btn-simular:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Estilos para a tabela de simulação */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 179, 179, 0.05);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 179, 179, 0.1);
+}
+
+/* Estilo para faltas que aumentaram */
+.text-danger {
+    color: var(--danger-color) !important;
+    font-weight: bold;
+}
+
+/* Ajustes para o container de simulação */
+.resultado-card .card-body {
+    padding: 30px;
+}
+
+.resultado-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+/* Manter a fonte Roboto para elementos específicos nas outras páginas */
+.login-card,
+.custom-navbar,
+.alert {
+    font-family: 'Roboto', sans-serif;
+}
+
+.bg-danger.text-white td {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.data-entry {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+#add-data {
+    margin-bottom: 20px;
+}
+
+.remove-data {
+    margin-left: 10px;
+}
+
+.input-group .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.table-striped-row {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.bg-danger.text-white .faltas-alteradas {
+    color: white !important;
+    font-weight: bold;
+}
+
+.faltas-alteradas {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.toggle-all {
+    margin-bottom: 10px;
+}

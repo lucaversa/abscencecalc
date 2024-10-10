@@ -2,68 +2,18 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
-import os
-import logging
-import subprocess
-
-import os
-import logging
-import subprocess
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 def scrape_portal(username, password):
-    logger.info(f"Current PATH: {os.environ['PATH']}")
-    
-    chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
-    chromedriver_path = "/opt/render/project/.render/chrome/opt/google/chrome/chromedriver"
-    
-    logger.info(f"Chrome path: {chrome_path}")
-    logger.info(f"ChromeDriver path: {chromedriver_path}")
-    
-    if not os.path.exists(chrome_path):
-        logger.error(f"Chrome binary not found at {chrome_path}")
-        return None, None
-
-    if not os.path.exists(chromedriver_path):
-        logger.error(f"ChromeDriver not found at {chromedriver_path}")
-        return None, None
-
-    # Check Chrome version
-    try:
-        chrome_version = subprocess.check_output([chrome_path, '--version']).decode().strip()
-        logger.info(f"Chrome version: {chrome_version}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error checking Chrome version: {e}")
-
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.binary_location = chrome_path
-
-    logger.info(f"Chrome binary location: {chrome_options.binary_location}")
-    
-    try:
-        service = Service(executable_path=chromedriver_path)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-    except Exception as e:
-        logger.error(f"Error initializing Chrome driver: {e}")
-        # Print more detailed error information
-        import traceback
-        logger.error(traceback.format_exc())
-        return None, None
+    # Inicializar o navegador Chrome
+    options = Options()
+    options.add_argument("--headless")  # Executa sem abrir o navegador (modo invisível)
+    driver = webdriver.Chrome(service=ChromeService(), options=options)
     
     try:
         # Passo 1: Acessar o portal do aluno
