@@ -13,19 +13,25 @@ import time
 from scraper import scrape_portal
 
 import os
-
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Log the current PATH
+# Log system information
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"Directory contents: {os.listdir('.')}")
 logger.info(f"Current PATH: {os.environ['PATH']}")
 
 # Add Chrome to PATH if not already present
 chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome"
-if chrome_path not in os.environ["PATH"]:
-    os.environ["PATH"] = f"{chrome_path}:{os.environ['PATH']}"
-    logger.info(f"Updated PATH: {os.environ['PATH']}")
+if os.path.exists(chrome_path):
+    if chrome_path not in os.environ["PATH"]:
+        os.environ["PATH"] = f"{chrome_path}:{os.environ['PATH']}"
+        logger.info(f"Updated PATH: {os.environ['PATH']}")
+else:
+    logger.error(f"Chrome path does not exist: {chrome_path}")
 
 app = Flask(__name__)
 

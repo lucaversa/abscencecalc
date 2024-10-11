@@ -3,9 +3,6 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 echo "Starting custom build process"
 
-# Install system dependencies
-apt-get update && apt-get install -y wget
-
 # Set up Chrome
 STORAGE_DIR=/opt/render/project/.render
 
@@ -21,11 +18,33 @@ else
   echo "Using Chrome from cache"
 fi
 
-# Return to project directory
-cd $RENDER_PROJECT_DIR
+# Print current directory and list contents
+echo "Current directory: $(pwd)"
+ls -la
+
+# Try to find the project directory
+if [ -d "/opt/render/project/src" ]; then
+  echo "Found project directory at /opt/render/project/src"
+  cd /opt/render/project/src
+elif [ -d "$HOME/project" ]; then
+  echo "Found project directory at $HOME/project"
+  cd $HOME/project
+else
+  echo "Could not find project directory"
+  exit 1
+fi
+
+# Print current directory and list contents again
+echo "Current directory after cd: $(pwd)"
+ls -la
 
 # Install Python dependencies
 echo "Installing Python dependencies"
-pip install -r requirements.txt
+if [ -f "requirements.txt" ]; then
+  pip install -r requirements.txt
+else
+  echo "requirements.txt not found"
+  exit 1
+fi
 
 echo "Build process completed"

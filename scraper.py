@@ -19,6 +19,10 @@ def scrape_portal(username, password):
     
     chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
     
+    if not os.path.exists(chrome_path):
+        logger.error(f"Chrome binary not found at {chrome_path}")
+        return None, None
+
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -27,9 +31,15 @@ def scrape_portal(username, password):
 
     logger.info(f"Chrome binary location: {chrome_options.binary_location}")
     
-    service = Service(chrome_path)
-    
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    try:
+        service = Service(chrome_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    except Exception as e:
+        logger.error(f"Error initializing Chrome driver: {e}")
+        return None, None
+
+    # Rest of your scraping code...
+
     
     try:
         # Passo 1: Acessar o portal do aluno
