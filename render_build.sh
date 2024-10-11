@@ -21,9 +21,6 @@ else
   echo "Using Chrome from cache"
 fi
 
-# Add Chrome to PATH
-echo "export PATH=\"$STORAGE_DIR/chrome/opt/google/chrome:\$PATH\"" >> $HOME/.profile
-
 # Return to project directory
 cd $RENDER_PROJECT_DIR
 

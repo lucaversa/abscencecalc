@@ -15,17 +15,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def scrape_portal(username, password):
-    # Configurar as opções do Chrome
+    logger.info(f"Current PATH: {os.environ['PATH']}")
+    
+    chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
+    
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.binary_location = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
+    chrome_options.binary_location = chrome_path
 
-    # Configurar o serviço do Chrome
-    service = Service("/opt/render/project/.render/chrome/opt/google/chrome/chrome")
+    logger.info(f"Chrome binary location: {chrome_options.binary_location}")
     
-    # Inicializar o navegador Chrome
+    service = Service(chrome_path)
+    
     driver = webdriver.Chrome(service=service, options=chrome_options)
     
     try:
