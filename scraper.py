@@ -13,6 +13,8 @@ def scrape_portal(username, password):
     # Inicializar o navegador Chrome
     options = Options()
     options.add_argument("--headless")  # Executa sem abrir o navegador (modo invisível)
+    options.add_argument('--no-sandbox')   
+    options.add_argument('--disable-dev-shm-usage')  
     driver = webdriver.Chrome(service=ChromeService(), options=options)
     
     try:
