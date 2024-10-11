@@ -10,6 +10,7 @@ import time
 import json
 import os
 import logging
+import subprocess
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,6 +23,13 @@ def scrape_portal(username, password):
     if not os.path.exists(chrome_path):
         logger.error(f"Chrome binary not found at {chrome_path}")
         return None, None
+
+    # Check Chrome version
+    try:
+        chrome_version = subprocess.check_output([chrome_path, '--version']).decode().strip()
+        logger.info(f"Chrome version: {chrome_version}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error checking Chrome version: {e}")
 
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -36,11 +44,10 @@ def scrape_portal(username, password):
         driver = webdriver.Chrome(service=service, options=chrome_options)
     except Exception as e:
         logger.error(f"Error initializing Chrome driver: {e}")
+        # Print more detailed error information
+        import traceback
+        logger.error(traceback.format_exc())
         return None, None
-
-    # Rest of your scraping code...
-
-    
     try:
         # Passo 1: Acessar o portal do aluno
         driver.get("https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/web/app/edu/PortalEducacional/login/")

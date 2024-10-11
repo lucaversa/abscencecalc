@@ -14,6 +14,10 @@ from scraper import scrape_portal
 
 import os
 import sys
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,14 +28,26 @@ logger.info(f"Current working directory: {os.getcwd()}")
 logger.info(f"Directory contents: {os.listdir('.')}")
 logger.info(f"Current PATH: {os.environ['PATH']}")
 
-# Add Chrome to PATH if not already present
-chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome"
+# Test Chrome
+chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
 if os.path.exists(chrome_path):
-    if chrome_path not in os.environ["PATH"]:
-        os.environ["PATH"] = f"{chrome_path}:{os.environ['PATH']}"
-        logger.info(f"Updated PATH: {os.environ['PATH']}")
+    logger.info(f"Chrome found at {chrome_path}")
+    try:
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.binary_location = chrome_path
+        
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get("https://www.google.com")
+        logger.info(f"Chrome test successful. Page title: {driver.title}")
+        driver.quit()
+    except Exception as e:
+        logger.error(f"Chrome test failed: {e}")
 else:
-    logger.error(f"Chrome path does not exist: {chrome_path}")
+    logger.error(f"Chrome not found at {chrome_path}")
 
 app = Flask(__name__)
 
