@@ -8,6 +8,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
+import os
+
+# Adicionar o diretório do Chrome ao PATH
+chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome"
+if chrome_path not in os.environ["PATH"]:
+    os.environ["PATH"] += os.pathsep + chrome_path
 
 def scrape_portal(username, password):
     # Configurar as opções do Chrome
