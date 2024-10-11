@@ -27,9 +27,14 @@ def scrape_portal(username, password):
     logger.info(f"Current PATH: {os.environ['PATH']}")
     
     chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
+    chromedriver_path = "/opt/render/project/.render/chrome/opt/google/chrome/chromedriver"
     
     if not os.path.exists(chrome_path):
         logger.error(f"Chrome binary not found at {chrome_path}")
+        return None, None
+
+    if not os.path.exists(chromedriver_path):
+        logger.error(f"ChromeDriver not found at {chromedriver_path}")
         return None, None
 
     # Check Chrome version
@@ -48,7 +53,7 @@ def scrape_portal(username, password):
     logger.info(f"Chrome binary location: {chrome_options.binary_location}")
     
     try:
-        service = Service(ChromeDriverManager().install())
+        service = Service(executable_path=chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
     except Exception as e:
         logger.error(f"Error initializing Chrome driver: {e}")

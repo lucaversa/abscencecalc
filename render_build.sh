@@ -12,10 +12,7 @@ if [[ ! -d $STORAGE_DIR/chrome ]]; then
   cd $STORAGE_DIR/chrome
   wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
   
-  # Install Chrome dependencies
-  sudo apt-get update
-  sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-  
+  # Extract Chrome without installing
   dpkg -x ./google-chrome-stable_current_amd64.deb $STORAGE_DIR/chrome
   rm ./google-chrome-stable_current_amd64.deb
   echo "Chrome downloaded and extracted"
@@ -29,6 +26,9 @@ CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATE
 wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
 unzip /tmp/chromedriver.zip -d ${STORAGE_DIR}/chrome/opt/google/chrome/
 chmod +x ${STORAGE_DIR}/chrome/opt/google/chrome/chromedriver
+
+# Add Chrome and ChromeDriver to PATH
+export PATH="${STORAGE_DIR}/chrome/opt/google/chrome:${PATH}"
 
 # Print current directory and list contents
 echo "Current directory: $(pwd)"
