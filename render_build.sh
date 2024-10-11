@@ -5,30 +5,66 @@ echo "Starting custom build process"
 
 # Set up Chrome
 STORAGE_DIR=/opt/render/project/.render
+CHROME_DIR=$STORAGE_DIR/chrome
+CHROME_BIN=$CHROME_DIR/opt/google/chrome/chrome
 
-if [[ ! -d $STORAGE_DIR/chrome ]]; then
-  echo "Downloading Chrome"
-  mkdir -p $STORAGE_DIR/chrome
-  cd $STORAGE_DIR/chrome
+echo "Storage directory: $STORAGE_DIR"
+echo "Chrome directory: $CHROME_DIR"
+echo "Chrome binary path: $CHROME_BIN"
+
+if [[ ! -f $CHROME_BIN ]]; then
+  echo "Chrome not found. Downloading and extracting..."
+  mkdir -p $CHROME_DIR
+  cd $CHROME_DIR
   wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
   
   # Extract Chrome without installing
-  dpkg -x ./google-chrome-stable_current_amd64.deb $STORAGE_DIR/chrome
+  dpkg -x ./google-chrome-stable_current_amd64.deb $CHROME_DIR
   rm ./google-chrome-stable_current_amd64.deb
-  echo "Chrome downloaded and extracted"
+  
+  # Verify Chrome extraction
+  if [[ -f $CHROME_BIN ]]; then
+    echo "Chrome successfully extracted"
+  else
+    echo "Failed to extract Chrome"
+    exit 1
+  fi
 else
-  echo "Using Chrome from cache"
+  echo "Chrome already exists at $CHROME_BIN"
+fi
+
+# List Chrome directory contents
+echo "Chrome directory contents:"
+ls -R $CHROME_DIR
+
+# Check Chrome version
+if [[ -f $CHROME_BIN ]]; then
+  CHROME_VERSION=$($CHROME_BIN --version)
+  echo "Chrome version: $CHROME_VERSION"
+else
+  echo "Chrome binary not found at $CHROME_BIN"
+  exit 1
 fi
 
 # Install ChromeDriver
-CHROME_VERSION=$(${STORAGE_DIR}/chrome/opt/google/chrome/chrome --version | cut -d ' ' -f 3)
 CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
+echo "ChromeDriver version to install: $CHROMEDRIVER_VERSION"
 wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-unzip /tmp/chromedriver.zip -d ${STORAGE_DIR}/chrome/opt/google/chrome/
-chmod +x ${STORAGE_DIR}/chrome/opt/google/chrome/chromedriver
+unzip /tmp/chromedriver.zip -d $CHROME_DIR/opt/google/chrome/
+chmod +x $CHROME_DIR/opt/google/chrome/chromedriver
+
+# Verify ChromeDriver installation
+if [[ -f $CHROME_DIR/opt/google/chrome/chromedriver ]]; then
+  echo "ChromeDriver successfully installed"
+else
+  echo "Failed to install ChromeDriver"
+  exit 1
+fi
 
 # Add Chrome and ChromeDriver to PATH
-export PATH="${STORAGE_DIR}/chrome/opt/google/chrome:${PATH}"
+export PATH="$CHROME_DIR/opt/google/chrome:$PATH"
+
+echo "Updated PATH: $PATH"
 
 # Print current directory and list contents
 echo "Current directory: $(pwd)"

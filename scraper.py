@@ -29,6 +29,9 @@ def scrape_portal(username, password):
     chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
     chromedriver_path = "/opt/render/project/.render/chrome/opt/google/chrome/chromedriver"
     
+    logger.info(f"Chrome path: {chrome_path}")
+    logger.info(f"ChromeDriver path: {chromedriver_path}")
+    
     if not os.path.exists(chrome_path):
         logger.error(f"Chrome binary not found at {chrome_path}")
         return None, None
