@@ -12,6 +12,14 @@ import os
 import logging
 import subprocess
 
+import os
+import logging
+import subprocess
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -40,7 +48,7 @@ def scrape_portal(username, password):
     logger.info(f"Chrome binary location: {chrome_options.binary_location}")
     
     try:
-        service = Service(chrome_path)
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
     except Exception as e:
         logger.error(f"Error initializing Chrome driver: {e}")
@@ -48,6 +56,7 @@ def scrape_portal(username, password):
         import traceback
         logger.error(traceback.format_exc())
         return None, None
+    
     try:
         # Passo 1: Acessar o portal do aluno
         driver.get("https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/web/app/edu/PortalEducacional/login/")

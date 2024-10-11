@@ -23,6 +23,13 @@ else
   echo "Using Chrome from cache"
 fi
 
+# Install ChromeDriver
+CHROME_VERSION=$(${STORAGE_DIR}/chrome/opt/google/chrome/chrome --version | cut -d ' ' -f 3)
+CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
+wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+unzip /tmp/chromedriver.zip -d ${STORAGE_DIR}/chrome/opt/google/chrome/
+chmod +x ${STORAGE_DIR}/chrome/opt/google/chrome/chromedriver
+
 # Print current directory and list contents
 echo "Current directory: $(pwd)"
 ls -la
