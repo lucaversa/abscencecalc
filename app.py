@@ -91,6 +91,56 @@ def login():
 
 # Funções auxiliares
 
+def calcular_data_pode_faltar(aulas_restantes, faltas_permitidas, schedule_data, cod_disc, dias_info):
+    hoje = datetime.date.today()
+    
+    # Filtra e ordena as aulas válidas futuras
+    aulas_validas = [
+        aula for aula in schedule_data 
+        if aula.get('CODDISC') == cod_disc and aula.get('DATAINICIAL')
+    ]
+    aulas_futuras = [
+        aula for aula in aulas_validas
+        if datetime.datetime.strptime(aula['DATAINICIAL'].split('T')[0], "%Y-%m-%d").date() >= hoje
+    ]
+    aulas_ordenadas = sorted(aulas_futuras, key=lambda x: x['DATAINICIAL'])
+    
+    if not aulas_ordenadas:
+        return "Não há aulas futuras programadas"
+    
+    # Verifica se todas as porcentagens são iguais
+    porcentagens = [dia['porcentagem_perda'] for dia in dias_info]
+    todas_iguais = len(set(porcentagens)) == 1
+    
+    aulas_obrigatorias = aulas_restantes - faltas_permitidas
+    if aulas_obrigatorias <= 0:
+        return "Você pode faltar o restante das aulas"
+    
+    if todas_iguais:
+        # Caso 1: Todas as porcentagens são iguais
+        if len(aulas_ordenadas) <= aulas_obrigatorias:
+            return "Você não pode faltar mais nenhuma aula"
+        
+        data_corte = datetime.datetime.strptime(aulas_ordenadas[aulas_obrigatorias - 1]['DATAINICIAL'].split('T')[0], "%Y-%m-%d").date()
+    else:
+        # Caso 2: Porcentagens diferentes por dia da semana
+        aulas_contadas = 0
+        for aula in aulas_ordenadas:
+            data_aula = datetime.datetime.strptime(aula['DATAINICIAL'].split('T')[0], "%Y-%m-%d").date()
+            dia_semana = data_aula.weekday()
+            dia_info = next((d for d in dias_info if d['dia'] == ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'][dia_semana]), None)
+            
+            if dia_info:
+                aulas_contadas += 1
+                if aulas_contadas == aulas_obrigatorias:
+                    data_corte = data_aula
+                    break
+        else:
+            return "Você não pode faltar mais nenhuma aula"
+    
+    data_pode_faltar = data_corte + datetime.timedelta(days=1)
+    return f"Você pode faltar a partir de {data_pode_faltar.strftime('%d/%m/%Y')}"
+    
 def calcular_porcentagem_faltas(faltas, ch):
     if ch == 0:
         return 0.0
@@ -440,6 +490,15 @@ def process_login_thread(username, password, session_id):
                         'percentage_can_miss': percentage_can_miss
                     })
 
+                # Calcular a data a partir da qual o aluno pode faltar
+                data_pode_faltar = calcular_data_pode_faltar(
+                    total_aulas_restantes,
+                    faltas_permitidas_restantes,
+                    schedule_data,
+                    cod_disc,
+                    dias_info
+                )
+
                 # **Nova Condição: Apenas incluir a disciplina se houver dias com aulas restantes**
                 if not dias_info:
                     continue  # Pula esta disciplina, não inclui nos resultados
@@ -452,7 +511,8 @@ def process_login_thread(username, password, session_id):
                     'porcentagem_restante': porcentagem_restante,
                     'faltas_permitidas_restantes': faltas_permitidas_restantes,
                     'total_aulas_restantes': total_aulas_restantes,
-                    'dias_info': dias_info
+                    'dias_info': dias_info, 
+                    'data_pode_faltar': data_pode_faltar
                 })
 
             # Ordenar os resultados em ordem decrescente de porcentagem de faltas

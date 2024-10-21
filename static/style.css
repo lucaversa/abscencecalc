@@ -763,3 +763,30 @@ textarea {
     background-size: 200% 200%;
     animation: gradientAnimation 5s ease infinite;
 }
+
+.falta-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.falta-reprovado {
+    background-color: #ffcccc;
+    color: #cc0000;
+}
+
+.falta-limite {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.falta-liberado {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.falta-parcial {
+    background-color: #cce5ff;
+    color: #004085;
+}

@@ -145,6 +145,20 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+
+                        <div class="mt-3">
+                            {% if resultado.porcentagem_faltas > 25 %}
+                            <span class="falta-status falta-reprovado">Você foi reprovado por faltas nesta
+                                matéria</span>
+                            {% elif resultado.porcentagem_faltas == 25 %}
+                            <span class="falta-status falta-limite">Você está no limite de faltas e não pode faltar
+                                mais</span>
+                            {% elif resultado.data_pode_faltar == "Você pode faltar o restante das aulas" %}
+                            <span class="falta-status falta-liberado">Você pode faltar o restante das aulas</span>
+                            {% else %}
+                            <span class="falta-status falta-parcial">{{ resultado.data_pode_faltar }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
