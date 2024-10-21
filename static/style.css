@@ -216,9 +216,9 @@ h2 {
 
 .card-header {
     padding: 25px;
-    /* background-color: var(--header-bg-color); */
-    /* Removido para permitir gradiente */
     color: #ffffff;
+    background-size: 200% 200%;
+    animation: gradientAnimation 10s ease infinite;
 }
 
 .card-body {
@@ -747,8 +747,19 @@ textarea {
     }
 }
 
-.progress-bar {
+#progress-bar {
     background: linear-gradient(45deg, var(--primary-color), #20c997, var(--primary-color));
     background-size: 200% 200%;
     animation: gradientAnimation 3s ease infinite;
+}
+
+.resultado-card .progress-bar {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 25px;
+    color: white;
+    text-align: center;
+    background-size: 200% 200%;
+    animation: gradientAnimation 5s ease infinite;
 }

@@ -56,13 +56,13 @@ def get_color(porcentagem_faltas):
 
     if porcentagem_faltas >= 25:
         # Gradiente completo para vermelho
-        gradient = 'linear-gradient(to right, rgb(220, 53, 0), rgb(220, 53, 0))'
+        gradient = 'linear-gradient(to right, rgb(220, 53, 0), rgb(255, 0, 0))'
     else:
         # Calcula a cor intermediária baseada na porcentagem
         ratio = porcentagem_faltas / 25.0
-        r = int(32 + (220 - 32) * ratio)      # De 32 a 220
-        g = int(178 + (53 - 178) * ratio)     # De 178 a 53
-        b = int(170 + (0 - 170) * ratio)      # De 170 a 0
+        r = int(32 + (255 - 32) * ratio)  # De 32 a 255 (mais vermelho)
+        g = int(178 + (0 - 178) * ratio)  # De 178 a 0
+        b = int(170 + (0 - 170) * ratio)  # De 170 a 0
         # Cria um gradiente que começa com azul-turquesa e vai até a cor calculada
         gradient = f'linear-gradient(to right, rgb(32, 178, 170), rgb({r}, {g}, {b}))'
     return gradient
@@ -265,15 +265,28 @@ def process_login_thread(username, password, session_id):
                 except ValueError:
                     continue  # Ignora se DIASEMANA não for um número válido
 
-                # Verifica se DIASEMANA está entre 1 e 6 (exclui Sábado - 7)
-                if dia_semana < 1 or dia_semana > 6:
-                    continue  # Ignora dias inválidos e Sábado
+                # Permitir dias entre 1 e 7 (inclui Sábado)
+                if dia_semana < 1 or dia_semana > 7:
+                    continue  # Ignora dias inválidos
 
                 # Extrai a data (parte antes do 'T')
                 data = data_inicial.split("T")[0]
 
                 # Incrementa a contagem para a matéria, dia da semana e data
                 subjects_days_dates[cod_disc][dia_semana][data] += 1
+
+            # Tratamento especial para Sábados
+            # Apenas considera aulas de sábado para matérias que têm mais de 1 aula nesse dia
+            for cod_disc in list(subjects_days_dates.keys()):
+                if 7 in subjects_days_dates[cod_disc]:
+                    # Iterar sobre cada data no sábado
+                    for data in list(subjects_days_dates[cod_disc][7].keys()):
+                        num_aulas = subjects_days_dates[cod_disc][7][data]
+                        if num_aulas <= 1:
+                            del subjects_days_dates[cod_disc][7][data]  # Remove a data se tiver 1 ou nenhuma aula
+                    # Se, após a remoção, não houver mais datas no sábado para a disciplina, remove o dia 7
+                    if not subjects_days_dates[cod_disc][7]:
+                        del subjects_days_dates[cod_disc][7]
 
             update_progress(session_id, PHASE_PROCESSING, "Contando aulas por matéria e dia", 70)
 
@@ -327,7 +340,7 @@ def process_login_thread(username, password, session_id):
 
             update_progress(session_id, PHASE_PROCESSING, "Analisando padrões de aulas", 80)
 
-            # Função para mapear números para nomes dos dias da semana (exclui Sábado)
+            # Função para mapear números para nomes dos dias da semana (inclui Sábado)
             def get_day_name(day_number, is_practical=False):
                 days = {
                     1: "Domingo",
@@ -335,7 +348,8 @@ def process_login_thread(username, password, session_id):
                     3: "Terça-feira",
                     4: "Quarta-feira",
                     5: "Quinta-feira",
-                    6: "Sexta-feira"
+                    6: "Sexta-feira",
+                    7: "Sábado"  # Adicionado
                 }
                 base_name = days.get(day_number, "Dia inválido")
                 return f"{base_name} (com prática)" if is_practical else base_name
@@ -345,7 +359,7 @@ def process_login_thread(username, password, session_id):
 
             for cod_disc, dias in subjects_mode_per_day.items():
                 nome_materia = faltas_ch_info.get(cod_disc, {}).get("nome_materia", "Nome desconhecido")
-                for dia in range(1, 7):  # De Domingo (1) a Sexta-feira (6)
+                for dia in range(1, 8):  # De Domingo (1) a Sábado (7)
                     aulas_info = dias.get(dia, {"regular": 0, "practical": 0})
                     if aulas_info["regular"] > 0:
                         subjects_aulas_por_dia[cod_disc].append({
@@ -396,12 +410,18 @@ def process_login_thread(username, password, session_id):
                         3: "Terça-feira",
                         4: "Quarta-feira",
                         5: "Quinta-feira",
-                        6: "Sexta-feira"
+                        6: "Sexta-feira",
+                        7: "Sábado"
                     }.items():
                         if nome in dia:  # Usamos 'in' para pegar tanto dias normais quanto com prática
                             dia_num = num
                             break
                     dias_restantes_na_semana = dias_restantes.get(dia_num, 0)
+                    
+                    # **Nova Condição: Apenas incluir o dia se houver aulas restantes**
+                    if dias_restantes_na_semana <= 0:
+                        continue  # Pula este dia, não inclui nos resultados
+
                     porcentagem_perda = calcular_perda_por_dia(num_aulas, ch)
                     # Calcula quantas vezes você pode faltar nesse dia sem exceder 25%
                     faltas_permitidas_dia = calcular_faltas_permitidas(faltas, ch, num_aulas)
@@ -419,6 +439,10 @@ def process_login_thread(username, password, session_id):
                         'dias_restantes': dias_restantes_na_semana,
                         'percentage_can_miss': percentage_can_miss
                     })
+
+                # **Nova Condição: Apenas incluir a disciplina se houver dias com aulas restantes**
+                if not dias_info:
+                    continue  # Pula esta disciplina, não inclui nos resultados
 
                 resultados.append({
                     'nome_materia': nome_materia,
