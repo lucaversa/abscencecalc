@@ -73,96 +73,96 @@
         {% endif %}
         {% endwith %}
 
-        <div class="container-fluid resultados-background">
-            <div class="container mt-5">
-                {% for resultado in resultados %}
-                <div class="card resultado-card mb-4">
-                    <div class="card-header"
-                        style="background: {{ resultado.porcentagem_faltas|get_color }}; background-size: 200% 200%; animation: gradientAnimation 10s ease infinite;">
-                        <h2 class="mb-0 materia-nome">
-                            {% if resultado.porcentagem_faltas >= 25 %}
-                            <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
-                            {% endif %}
-                            {{ resultado.nome_materia }} (CH: {{ resultado.ch|int }})
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <!-- Barra de Progresso de Faltas -->
-                        <div class="mb-3">
-                            <strong>Progresso de Faltas:</strong>
-                            <div class="progress">
-                                {% set width_percent = (resultado.porcentagem_faltas / 25.0) * 100 %}
-                                {% if width_percent > 100 %}
-                                {% set width_percent = 100 %}
-                                {% endif %}
-                                <div class="progress-bar"
-                                    style="width: {{ width_percent }}%; background: {{ resultado.porcentagem_faltas|get_color }}; background-size: 200% 200%; animation: gradientAnimation 5s ease infinite;"
-                                    aria-valuenow="{{ resultado.porcentagem_faltas }}" aria-valuemin="0"
-                                    aria-valuemax="25">
-                                    {{ resultado.porcentagem_faltas|round(2) }}%
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Total de Faltas:</strong> {{ resultado.faltas }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Tabela com informações detalhadas -->
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Dia da semana</th>
-                                    <th>Quantos % vale cada dia?</th>
-                                    <th>Quantas vezes posso faltar esse dia?</th>
-                                    <th>Dias de aula restantes neste dia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for dia_info in resultado.dias_info %}
-                                <tr>
-                                    <td>{{ dia_info.dia }}</td>
-                                    <td>{{ dia_info.porcentagem_perda|round(2) }}%</td>
-                                    <td>
-                                        {% if dia_info.faltas_permitidas_dia > 0 %}
-                                        {{ dia_info.faltas_permitidas_dia }} vez{% if dia_info.faltas_permitidas_dia > 1
-                                        %}es{% endif %}
-                                        ({{ (dia_info.percentage_can_miss if dia_info.percentage_can_miss <= 100 else
-                                            100)|round(0)|int }}% do restante) {% else %} Não pode faltar neste dia {%
-                                            endif %} </td>
-                                    <td>
-                                        {% if dia_info.dias_restantes > 0 %}
-                                        Resta{% if dia_info.dias_restantes > 1 %}m{% endif %} {{ dia_info.dias_restantes
-                                        }}
-                                        dia{% if dia_info.dias_restantes > 1 %}s{% endif %} de aula
-                                        {% else %}
-                                        Não restam dias de aula
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-
-                        <div class="mt-3">
-                            {% if resultado.porcentagem_faltas > 25 %}
-                            <span class="falta-status falta-reprovado">Você foi reprovado por faltas nesta
-                                matéria</span>
-                            {% elif resultado.porcentagem_faltas == 25 %}
-                            <span class="falta-status falta-limite">Você está no limite de faltas e não pode faltar
-                                mais</span>
-                            {% elif resultado.data_pode_faltar == "Você pode faltar o restante das aulas" %}
-                            <span class="falta-status falta-liberado">Você pode faltar o restante das aulas</span>
-                            {% else %}
-                            <span class="falta-status falta-parcial">{{ resultado.data_pode_faltar }}</span>
-                            {% endif %}
+        <div class="container mt-5">
+            {% for resultado in resultados %}
+            <div class="resultado-card mb-4">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        {% if resultado.porcentagem_faltas >= 25 %}
+                        <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
+                        {% endif %}
+                        {{ resultado.nome_materia }} (CH: {{ resultado.ch|int }})
+                    </h2>
+                    <span class="falta-status 
+                        {% if resultado.porcentagem_faltas > 25 %}falta-reprovado
+                        {% elif resultado.porcentagem_faltas == 25 %}falta-risco
+                        {% elif resultado.porcentagem_faltas >= 20 %}falta-alerta
+                        {% elif resultado.porcentagem_faltas >= 10 %}falta-observacao
+                        {% else %}falta-normal
+                        {% endif %}">
+                        {% if resultado.porcentagem_faltas > 25 %}Reprovado 😭
+                        {% elif resultado.porcentagem_faltas == 25 %}Risco de reprovação 🚨
+                        {% elif resultado.porcentagem_faltas >= 20 %}Alerta ⚠️
+                        {% elif resultado.porcentagem_faltas >= 10 %}Fique atento 🤔
+                        {% else %}Normal 🙂
+                        {% endif %}
+                    </span>
+                </div> <!-- Barra de Progresso de Faltas -->
+                <div class="mb-3">
+                    <div class="progress">
+                        {% set width_percent = (resultado.porcentagem_faltas / 25.0) * 100 %}
+                        {% if width_percent > 100 %}
+                        {% set width_percent = 100 %}
+                        {% endif %}
+                        <div class="progress-bar"
+                            style="width: {{ width_percent }}%; background: {{ resultado.porcentagem_faltas|get_color }}; background-size: 200% 200%; animation: gradientAnimation 5s ease infinite;"
+                            aria-valuenow="{{ resultado.porcentagem_faltas }}" aria-valuemin="0" aria-valuemax="25">
+                            {{ resultado.porcentagem_faltas|round(2) }}%
                         </div>
                     </div>
                 </div>
-                {% endfor %}
+
+                <!-- Tabela com informações detalhadas -->
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Dia da semana</th>
+                                <th>Quantos % vale?</th>
+                                <th>Quantas vezes posso faltar?</th>
+                                <th>Dias de aula restantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dia_info in resultado.dias_info %}
+                            <tr>
+                                <td data-label="Dia da semana">{{ dia_info.dia }}</td>
+                                <td data-label="Valor por dia">{{ dia_info.porcentagem_perda|round(2) }}%</td>
+                                <td data-label="Faltas permitidas">
+                                    {% if dia_info.faltas_permitidas_dia > 0 %}
+                                    {{ dia_info.faltas_permitidas_dia }} vez{% if dia_info.faltas_permitidas_dia > 1
+                                    %}es{% endif %}
+                                    ({{ (dia_info.percentage_can_miss if dia_info.percentage_can_miss <= 100 else
+                                        100)|round(0)|int }}% do restante) {% else %} Não pode faltar neste dia {% endif
+                                        %} </td>
+                                <td data-label="Dias restantes">
+                                    {% if dia_info.dias_restantes > 0 %}
+                                    Resta{% if dia_info.dias_restantes > 1 %}m{% endif %} {{ dia_info.dias_restantes }}
+                                    dia{% if dia_info.dias_restantes > 1 %}s{% endif %} de aula
+                                    {% else %}
+                                    Não restam dias de aula
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+
+                <div class="mt-3">
+                    {% if resultado.porcentagem_faltas > 25 %}
+                    <span class="falta-status falta-reprovado">Você foi reprovado por faltas nesta matéria</span>
+                    {% elif resultado.porcentagem_faltas == 25 %}
+                    <span class="falta-status falta-limite">Você está no limite de faltas e não pode faltar mais</span>
+                    {% elif resultado.data_pode_faltar == "Você pode faltar o restante das aulas" %}
+                    <span class="falta-status falta-liberado">Você pode faltar o restante das aulas</span>
+                    {% else %}
+                    <span class="falta-status falta-parcial">{{ resultado.data_pode_faltar }}</span>
+                    {% endif %}
+                </div>
             </div>
+            {% endfor %}
         </div>
     </div>
 

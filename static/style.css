@@ -9,7 +9,7 @@
     --primary-color: #00b3b3;
     --primary-hover: #1e9b95;
     --text-color: #333333;
-    --background-gradient: linear-gradient(135deg, #00b3b3, #008080);
+    --background-gradient: linear-gradient(to bottom, #8bddda, #0b6d6b);
     --card-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
     --card-hover-shadow: rgba(0, 0, 0, 0.2) 0px 8px 24px;
     --header-bg-color: #006D6F;
@@ -215,14 +215,14 @@ h2 {
 }
 
 .card-header {
-    padding: 25px;
+    padding: 35px;
     color: #ffffff;
     background-size: 200% 200%;
     animation: gradientAnimation 10s ease infinite;
 }
 
 .card-body {
-    padding: 25px;
+    padding: 35px;
     background-color: #f9f9f9;
 }
 
@@ -313,6 +313,12 @@ h2 {
 
     .card-body p {
         font-size: 1rem;
+    }
+
+    .card-header,
+    .card-body {
+        padding: 25px;
+        /* Volta para 25px em telas menores */
     }
 }
 
@@ -705,9 +711,9 @@ textarea {
 
 /* Estilos para o container da barra de progresso */
 .progress {
-    height: 25px;
+    height: 32px;
     background-color: #e9ecef;
-    border-radius: 12.5px;
+    border-radius: 15px;
     overflow: hidden;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -787,6 +793,115 @@ textarea {
 }
 
 .falta-parcial {
-    background-color: #cce5ff;
-    color: #004085;
+    background-color: #E0F7F6;
+    /* Um verde-turquesa bem claro para o fundo */
+    color: #00695C;
+    /* Um verde-turquesa escuro para o texto */
+}
+
+.falta-risco {
+    background-color: #ffcccc;
+    color: #cc0000;
+}
+
+.falta-alerta {
+    background-color: #f3efe5;
+    color: #be9004;
+}
+
+.falta-observacao {
+    background-color: #d7eef1;
+    color: #0f6977;
+}
+
+.falta-normal {
+    background-color: #E0F7F6;
+    /* Um verde-turquesa bem claro para o fundo */
+    color: #00695C;
+    /* Um verde-turquesa escuro para o texto */
+}
+
+.resultado-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 25px;
+    /* Aumentado para tornar as bordas mais arredondadas */
+    padding: 40px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* Adicionado para o efeito de hover suave */
+}
+
+.card-header-custom {
+    padding: 0px 0px 25px 0px;
+    background-color: transparent;
+    border-bottom: none;
+}
+
+
+.resultado-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resultado-card .card-title {
+    color: #006D6F;
+    font-weight: 700;
+    font-size: 1.68rem;
+    margin-bottom: 25px;
+}
+
+.resultado-card .table-container {
+    margin: 25px 0;
+}
+
+.resultado-card .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.resultado-card .table thead th {
+    border: none;
+    background-color: transparent;
+    color: #006D6F;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 6px 4px;
+    text-align: left;
+}
+
+.resultado-card .table td {
+    vertical-align: top;
+    padding: 6px 4px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 400;
+    text-align: left;
+    color: #005a5a;
+}
+
+.resultado-card .table td:first-child {
+    font-weight: 400;
+    color: #004d4d;
+}
+
+@media (max-width: 767.98px) {
+    .resultado-card {
+        padding: 25px;
+    }
+
+    .resultado-card .table tr {
+        margin-bottom: 12px;
+    }
+
+    .resultado-card .table td {
+        padding-left: 50%;
+        padding-bottom: 6px;
+    }
+
+    .resultado-card .table td::before {
+        font-size: 0.9rem;
+    }
 }
