@@ -222,13 +222,13 @@ h2 {
 }
 
 .card-body {
-    padding: 35px;
-    background-color: #f9f9f9;
+    padding: 0px;
+    background-color: #ffffff;
 }
 
 .card-body p {
     margin-bottom: 20px;
-    color: #555;
+
     font-size: 1.05rem;
 }
 
@@ -631,11 +631,6 @@ textarea {
     font-weight: bold;
 }
 
-/* Ajustes para o container de simulação */
-.resultado-card .card-body {
-    padding: 30px;
-}
-
 .resultado-card h3 {
     color: var(--primary-color);
     margin-bottom: 20px;
@@ -904,4 +899,74 @@ textarea {
     .resultado-card .table td::before {
         font-size: 0.9rem;
     }
+}
+
+.analysis-section h2 {
+    color: #006D6F;
+    /* Cor verde turquesa */
+}
+
+.analysis-section {
+    line-height: 1.9;
+    /* Espaçamento ainda maior entre linhas */
+}
+
+.analysis-section h3 {
+    margin-top: 25px;
+    /* Adiciona espaço acima de subtítulos, se houver */
+    margin-bottom: 15px;
+}
+
+.analysis-section ul,
+.analysis-section ol {
+    margin-bottom: 20px;
+    /* Espaço após listas */
+}
+
+.analysis-section>p>strong {
+    display: block;
+    border-top: 1px solid #e0e0e0;
+    /* Linha cinza discreta */
+    padding-top: 25px;
+    margin-top: 25px;
+    font-size: 1.2em;
+}
+
+/* Remove a borda do primeiro título de seção */
+.analysis-section>p:first-of-type>strong {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+/* Remove a borda do último título de seção */
+.analysis-section>p:last-of-type>strong {
+    border-top: none;
+}
+
+/* Ajusta o espaçamento para listas */
+.analysis-section>ul {
+    margin-top: 15px;
+    margin-bottom: 25px;
+}
+
+/* Estilo para os itens da lista */
+.analysis-section>ul>li {
+    margin-bottom: 10px;
+}
+
+/* Estilo para os títulos dentro dos itens da lista */
+.analysis-section>ul>li>strong {
+    color: #006D6F;
+    /* Mantém a cor da navbar para consistência */
+    font-weight: 600;
+}
+
+.chart-title {
+    color: #006D6F;
+    /* Cor da navbar */
+    font-weight: 700;
+    font-size: 1.68rem;
+    margin-bottom: 25px;
+    font-family: 'Montserrat', sans-serif;
 }

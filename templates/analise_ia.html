@@ -1,0 +1,244 @@
+<!-- templates/analise_ia.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Progresso</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        /* Ajusta o tamanho do gráfico para ser responsivo */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            /* Ajuste conforme necessário */
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-calendar-alt"></i> AbscenceCalc
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Lista de Links Centralizados -->
+            <div class="navbar-center">
+                <ul class="navbar-nav">
+                    <li class="nav-item {% if request.endpoint == 'resultado' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('resultado') }}">
+                            <i class="fas fa-chart-bar"></i> Controle de Faltas
+                            {% if request.endpoint == 'resultado' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'simulador' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('simulador') }}">
+                            <i class="fas fa-calculator"></i> Simulador de Falta
+                            {% if request.endpoint == 'simulador' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'analise_ia' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('analise_ia') }}">
+                            <i class="fas fa-chart-bar"></i> Meu Progresso
+                            {% if request.endpoint == 'analise_ia' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!-- Botão "Sair" Alinhado à Direita -->
+            <span class="navbar-text">
+                <a href="{{ url_for('logout') }}" class="btn btn-sair">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </span>
+        </div>
+    </nav>
+
+    <div class="content-wrapper">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="container mt-4">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="container mt-5">
+            <div class="resultado-card mb-4">
+                <div class="card-body">
+                    {% if analise_ia %}
+                    <div class="analysis-section">
+                        <!-- Renderizar o HTML gerado pela IA de forma segura -->
+                        {{ analise_ia | safe }}
+                    </div>
+                    <!-- Gráfico de Evolução da Média Global -->
+                    <div class="mt-5">
+                        <h3 class="chart-title">Evolução da Média por Período</h3>
+                        <div class="chart-container">
+                            <canvas id="evolucaoMediaChart"></canvas>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">A análise ainda está sendo gerada. Por favor, volte mais tarde.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer mt-auto py-3 bg-light">
+            <div class="container text-center">
+                <span class="text-muted">
+                    AbscenceCalc (2024), todos os direitos reservados.
+                    <a href="https://wa.me/5535997030903" target="_blank" rel="noopener noreferrer" class="ml-2">
+                        <i class="fas fa-external-link-alt"></i> WhatsApp
+                    </a>
+                </span>
+            </div>
+        </footer>
+
+        <!-- jQuery e Bootstrap JS -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Scripts para animações -->
+        <script>
+            document.body.classList.add('fade-in');
+        </script>
+
+        <!-- Script para o Gráfico -->
+        {% if metricas_por_periodo %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const ctx = document.getElementById('evolucaoMediaChart').getContext('2d');
+                const metricasPorPeriodo = {{ metricas_por_periodo | tojson | safe
+            }};
+
+            console.log("Métricas por período:", metricasPorPeriodo);
+
+            const labels = Object.keys(metricasPorPeriodo).map(periodo => `Período ${periodo}`);
+            const dataValues = Object.values(metricasPorPeriodo).map(metrica => metrica.media);
+
+            console.log("Labels:", labels);
+            console.log("Data values:", dataValues);
+
+            // Encontrar o valor mínimo e máximo para ajustar a escala
+            const minValue = Math.min(...dataValues);
+            const maxValue = Math.max(...dataValues);
+            const yMin = Math.floor(minValue - 0.5); // Arredonda para baixo e subtrai 0.5
+            const yMax = Math.ceil(maxValue + 0.5); // Arredonda para cima e adiciona 0.5
+
+            const evolucaoMediaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Média do Período',
+                        data: dataValues,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            min: yMin,
+                            max: yMax,
+                            ticks: {
+                                stepSize: 0.5
+                            },
+                            title: {
+                                display: true,
+                                text: 'Média'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Período'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        title: {
+                            display: false,
+                            text: 'Evolução da média por Período'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `Média: ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => value.toFixed(2),
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: {
+                        line: {
+                            tension: 0.4
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        });
+
+
+        </script>
+        {% endif %}
+
+</body>
+
+</html>

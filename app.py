@@ -10,6 +10,7 @@ import time
 import uuid
 from collections import Counter, defaultdict
 from statistics import mode, multimode
+from request_ia import analyze_performance
 
 from flask import (
     Flask, jsonify, redirect, render_template,
@@ -91,6 +92,260 @@ def login():
 
 # Funções auxiliares
 
+def filtrar_disciplinas(faltas_ch_data):
+    """
+    Filtra as disciplinas que estão aprovadas, não possuem IMG igual a 'equivalente.gif',
+    e que estão em períodos menores ou iguais a 12.
+
+    :param faltas_ch_data: Lista de dicionários contendo os dados de APRESENTACAOHISTORICO.
+    :return: Lista filtrada de disciplinas.
+    """
+    disciplinas_filtradas = []
+    for entry in faltas_ch_data:
+        status = entry.get("STATUS", "").strip().upper()
+        img = entry.get("IMG", "").strip().lower()
+        periodo = entry.get("CODPERIODO", 0)
+        
+        # Tenta converter o período para inteiro, se possível
+        try:
+            periodo = int(periodo)
+        except (ValueError, TypeError):
+            # Se não for possível converter, assume que o período é inválido e desconsidera a entrada
+            continue
+        
+        # Aplica as condições de filtro
+        if status == "APROVADO" and img != "equivalente.gif" and periodo <= 12:
+            disciplinas_filtradas.append(entry)
+    
+    return disciplinas_filtradas
+
+
+def extrair_informacoes_aluno(shabilitacao_aluno):
+    """
+    Extrai o nome do aluno, RA e nome do curso a partir de SHabilitacaoAluno.
+
+    :param shabilitacao_aluno: Lista de dicionários contendo os dados de SHabilitacaoAluno.
+    :return: Dicionário com 'nome_aluno', 'ra' e 'nome_curso'.
+    """
+    if not shabilitacao_aluno:
+        return {
+            'nome_aluno': 'N/A',
+            'ra': 'N/A',
+            'nome_curso': 'N/A'
+        }
+
+    # Considerando que há pelo menos uma entrada
+    aluno_info = shabilitacao_aluno[0]  # Pega a primeira entrada
+    nome_aluno = aluno_info.get('NOMEALUNO', 'N/A')
+    ra = aluno_info.get('RA', 'N/A')
+    nome_curso = aluno_info.get('NOMECURSO', 'N/A')
+
+    return {
+        'nome_aluno': nome_aluno,
+        'ra': ra,
+        'nome_curso': nome_curso
+    }
+
+def ordenar_disciplinas_por_periodo_e_nota(disciplinas):
+    """
+    Ordena as disciplinas por período (ascendente) e por nota (descendente),
+    retornando apenas período, nome da matéria e nota.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :return: Lista de disciplinas ordenadas com apenas os campos desejados.
+    """
+    def sort_key(disciplina):
+        # Obtém o período, padrão 0 se ausente ou inválido
+        try:
+            periodo = int(disciplina.get('CODPERIODO', 0))
+        except ValueError:
+            periodo = 0
+
+        # Obtém a nota, padrão 0.0 se ausente ou inválida
+        nota_str = disciplina.get('NOTA', '0').replace(',', '.')
+        try:
+            nota = float(nota_str)
+        except ValueError:
+            nota = 0.0
+        return (periodo, -nota)  # Ordena por período ascendente e nota descendente
+
+    # Ordena as disciplinas
+    disciplinas_ordenadas = sorted(disciplinas, key=sort_key)
+
+    # Extrai apenas os campos desejados
+    disciplinas_simplificadas = []
+    for disciplina in disciplinas_ordenadas:
+        try:
+            periodo = int(disciplina.get('CODPERIODO', 0))
+        except ValueError:
+            periodo = 0
+        nome_materia = disciplina.get('DISCIPLINA', 'N/A')
+        nota_str = disciplina.get('NOTA', '0').replace(',', '.')
+        try:
+            nota = float(nota_str)
+        except ValueError:
+            nota = 0.0
+        disciplinas_simplificadas.append({
+            'período': periodo,
+            'nome_da_materia': nome_materia,
+            'nota': nota
+        })
+
+    return disciplinas_simplificadas
+
+def calcular_media_global(disciplinas):
+    """
+    Calcula a média das notas de todas as disciplinas aprovadas.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :return: Média global das notas.
+    """
+    notas = []
+    for disciplina in disciplinas:
+        nota = disciplina.get('NOTA')
+        if nota is not None and nota != '':
+            try:
+                nota_float = float(nota.replace(',', '.'))
+                notas.append(nota_float)
+            except ValueError:
+                continue  # Ignora notas inválidas
+    if not notas:
+        return 0.0
+    media = sum(notas) / len(notas)
+    return round(media, 2)
+
+def calcular_melhor_pior_periodo(disciplinas):
+    """
+    Calcula o melhor e o pior período com base nas médias das notas.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :return: Tupla contendo o melhor período e o pior período.
+    """
+    periodo_notas = defaultdict(list)
+    for disciplina in disciplinas:
+        periodo = disciplina.get('CODPERIODO')
+        nota = disciplina.get('NOTA')
+        if periodo is not None and nota not in [None, '']:
+            try:
+                nota_float = float(nota.replace(',', '.'))
+                periodo_notas[periodo].append(nota_float)
+            except ValueError:
+                continue  # Ignora notas inválidas
+    medias_periodo = {}
+    for periodo, notas in periodo_notas.items():
+        if notas:
+            medias_periodo[periodo] = round(sum(notas) / len(notas), 2)
+    if not medias_periodo:
+        return None, None
+    melhor_periodo = max(medias_periodo, key=medias_periodo.get)
+    pior_periodo = min(medias_periodo, key=medias_periodo.get)
+    return melhor_periodo, pior_periodo
+
+def calcular_melhores_areas(disciplinas, top_n=5):
+    """
+    Calcula as disciplinas com as melhores médias de notas.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :param top_n: Número máximo de disciplinas a retornar.
+    :return: Lista de tuplas (disciplina, média).
+    """
+    disciplina_notas = defaultdict(list)
+    for disciplina in disciplinas:
+        nome = disciplina.get('DISCIPLINA')
+        nota = disciplina.get('NOTA')
+        if nome and nota not in [None, '']:
+            try:
+                nota_float = float(nota.replace(',', '.'))
+                disciplina_notas[nome].append(nota_float)
+            except ValueError:
+                continue  # Ignora notas inválidas
+    medias_disciplina = {}
+    for disciplina, notas in disciplina_notas.items():
+        if notas:
+            medias_disciplina[disciplina] = round(sum(notas) / len(notas), 2)
+    # Ordena as disciplinas pela média descendente
+    melhores_areas = sorted(medias_disciplina.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    return melhores_areas
+
+def calcular_piores_areas(disciplinas, top_n=5):
+    """
+    Calcula as disciplinas com as piores médias de notas.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :param top_n: Número máximo de disciplinas a retornar.
+    :return: Lista de tuplas (disciplina, média).
+    """
+    disciplina_notas = defaultdict(list)
+    for disciplina in disciplinas:
+        nome = disciplina.get('DISCIPLINA')
+        nota = disciplina.get('NOTA')
+        if nome and nota not in [None, '']:
+            try:
+                nota_float = float(nota.replace(',', '.'))
+                disciplina_notas[nome].append(nota_float)
+            except ValueError:
+                continue  # Ignora notas inválidas
+    medias_disciplina = {}
+    for disciplina, notas in disciplina_notas.items():
+        if notas:
+            medias_disciplina[disciplina] = round(sum(notas) / len(notas), 2)
+    # Ordena as disciplinas pela média ascendente (piores notas primeiro)
+    piores_areas = sorted(medias_disciplina.items(), key=lambda x: x[1])[:top_n]
+    return piores_areas
+
+def calcular_metricas_por_periodo(disciplinas):
+    """
+    Calcula, para cada período, a média das notas, a melhor e a pior nota,
+    além das top 3 melhores e piores disciplinas com suas respectivas notas.
+
+    :param disciplinas: Lista de disciplinas filtradas.
+    :return: Dicionário com as métricas por período.
+    """
+    periodo_notas = defaultdict(list)
+    disciplina_por_periodo = defaultdict(list)
+
+    # Agrupar notas por período e armazenar disciplinas por período
+    for disciplina in disciplinas:
+        periodo = disciplina.get('CODPERIODO')
+        nota = disciplina.get('NOTA')
+        nome_disciplina = disciplina.get('DISCIPLINA')
+        if periodo is not None and nota not in [None, '']:
+            try:
+                nota_float = float(nota.replace(',', '.'))
+                periodo_notas[periodo].append(nota_float)
+                disciplina_por_periodo[periodo].append({'DISCIPLINA': nome_disciplina, 'NOTA': nota_float})
+            except ValueError:
+                continue  # Ignora notas inválidas
+
+    metricas_por_periodo = {}
+    for periodo, notas in periodo_notas.items():
+        if notas:
+            media = round(sum(notas) / len(notas), 2)
+            melhor_nota = max(notas)
+            pior_nota = min(notas)
+
+            # Obter as top 3 melhores disciplinas
+            disciplinas_periodo = disciplina_por_periodo[periodo]
+            top_melhores = sorted(disciplinas_periodo, key=lambda x: x['NOTA'], reverse=True)[:10]
+            top_piores = sorted(disciplinas_periodo, key=lambda x: x['NOTA'])[:3]
+
+            # Formatar as disciplinas para exibição
+            top_melhores_formatado = [
+                {'DISCIPLINA': d['DISCIPLINA'], 'NOTA': d['NOTA']} for d in top_melhores
+            ]
+            top_piores_formatado = [
+                {'DISCIPLINA': d['DISCIPLINA'], 'NOTA': d['NOTA']} for d in top_piores
+            ]
+
+            metricas_por_periodo[periodo] = {
+                'media': media,
+                'melhor_nota': melhor_nota,
+                'pior_nota': pior_nota,
+                'top_melhores_disciplinas': top_melhores_formatado,
+                'top_piores_disciplinas': top_piores_formatado
+            }
+    return metricas_por_periodo
+
 def calcular_data_pode_faltar(aulas_restantes, faltas_permitidas, schedule_data, cod_disc, dias_info):
     hoje = datetime.date.today()
     
@@ -140,7 +395,7 @@ def calcular_data_pode_faltar(aulas_restantes, faltas_permitidas, schedule_data,
     
     data_pode_faltar = data_corte + datetime.timedelta(days=1)
     return f"Você pode faltar o restante das aulas a partir de {data_pode_faltar.strftime('%d/%m/%Y')}"
-    
+
 def calcular_porcentagem_faltas(faltas, ch):
     if ch == 0:
         return 0.0
@@ -269,8 +524,9 @@ def process_login_thread(username, password, session_id):
         try:
             logging.debug("Processando dados obtidos")
             faltas_ch_data = data1
+            informacoes_aluno = data1
             horario_data = data2
-
+            
             # Verifique se 'horario_data' é um dicionário
             if not isinstance(horario_data, dict):
                 logging.error("horario_data não é um dicionário.")
@@ -294,6 +550,15 @@ def process_login_thread(username, password, session_id):
             except KeyError as e:
                 logging.error(f"Chave ausente em faltas_ch_data: {e}")
                 update_progress(session_id, PHASE_PROCESSING, f"Erro: Chave ausente no JSON de faltas: {e}", 100)
+                return
+            
+            try:
+                informacoes_aluno = informacoes_aluno["data"]["SHabilitacaoAluno"]
+                logging.debug("informacoes_aluno extraído com sucesso.")
+                update_progress(session_id, PHASE_PROCESSING, "Extraindo dados do aluno", 40)
+            except KeyError as e:
+                logging.error(f"Chave ausente em informacoes_aluno: {e}")
+                update_progress(session_id, PHASE_PROCESSING, f"Erro: Chave ausente no JSON de alunos: {e}", 100)
                 return
 
             # Dicionário para mapear CODDISC para informações de faltas e CH (apenas CURSANDO)
@@ -569,14 +834,65 @@ def process_login_thread(username, password, session_id):
             logging.debug("Processamento de dados concluído")
             logging.debug(f"Resultados preparados: {len(resultados)} disciplinas processadas.")
 
+            informacoes_aluno_filtradas = extrair_informacoes_aluno(informacoes_aluno)
+            logging.debug(f"Info Aluno: {informacoes_aluno_filtradas}")
+
+            # Filtrar disciplinas conforme os critérios
+            disciplinas_filtradas = filtrar_disciplinas(faltas_ch_data)
+            logging.debug(f"Disciplinas filtradas: {len(disciplinas_filtradas)}")
+            update_progress(session_id, PHASE_PROCESSING, "Filtrando disciplinas aprovadas", 45)
+
+            # Ordenar disciplinas por período e nota
+            disciplinas_ordenadas = ordenar_disciplinas_por_periodo_e_nota(disciplinas_filtradas)
+            logging.debug(f"Disciplinas ordenadas: {disciplinas_ordenadas}")
+            
+            # Calcula as métricas desejadas
+            media_global = calcular_media_global(disciplinas_filtradas)
+            melhor_periodo, pior_periodo = calcular_melhor_pior_periodo(disciplinas_filtradas)
+            melhores_areas = calcular_melhores_areas(disciplinas_filtradas)
+            piores_areas = calcular_piores_areas(disciplinas_filtradas)
+            metricas_por_periodo = calcular_metricas_por_periodo(disciplinas_filtradas)
+
+            # Imprimir os resultados das métricas no console e logs
+            logging.debug(f"Média Global: {media_global}")
+            logging.debug(f"Melhor Período: {melhor_periodo}")
+            logging.debug(f"Pior Período: {pior_periodo}")
+            logging.debug(f"Melhores Áreas: {melhores_areas}")
+            logging.debug(f"Piores Áreas: {piores_areas}")
+            logging.debug(f"Métricas por Período: {metricas_por_periodo}")
+
+            # Adicionar as métricas ao dicionário de resultados
+            resultados_metrica = {
+                'media_global': media_global,
+                'melhor_periodo': melhor_periodo,
+                'pior_periodo': pior_periodo,
+                'melhores_areas': melhores_areas,
+                'piore_areas': piores_areas,
+                'metricas_por_periodo': metricas_por_periodo,
+                'disciplinas_ordenadas': disciplinas_ordenadas
+            }
+
             # Armazenar resultados no dicionário RESULTS
             logging.debug(f"Armazenando resultados no RESULTS para session_id: {session_id}")
             with results_lock:
                 RESULTS[session_id] = {
                     'resultados': resultados,
-                    'horario_data': horario_data
+                    'horario_data': horario_data, 
+                    'metrica': resultados_metrica,
+                    'info_aluno': informacoes_aluno_filtradas
                 }
             logging.debug(f"Dados armazenados em RESULTS[{session_id}]: chaves: {list(RESULTS[session_id].keys())}")
+
+             # Chamar a função de análise da IA
+            logging.debug("Chamando a função de análise de desempenho da IA")
+            analise_ia = analyze_performance(resultados_metrica, informacoes_aluno_filtradas)
+
+            # Armazenar a análise da IA no RESULTS
+            with results_lock:
+                RESULTS[session_id]['analise_ia'] = analise_ia
+
+            logging.debug("Análise da IA armazenada com sucesso")
+            logging.debug(f"IA: {analise_ia}")
 
             # Atualizar progresso para 100% após armazenar os dados
             update_progress(session_id, PHASE_PROCESSING, "Processamento concluído", 100)
@@ -693,6 +1009,28 @@ def simulador():
         return redirect(url_for('login'))
     resultados = data['resultados']
     return render_template('simulador.html', resultados=resultados)
+
+@app.route('/meu_progresso')
+def analise_ia():
+    session_id = session.get('session_id')
+    logging.debug(f"/analise_ia: session_id = {session_id}")
+
+    if not session_id:
+        flash("Erro: Sessão inválida. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+
+    with results_lock:
+        data = RESULTS.get(session_id)
+
+    if not data:
+        flash("Erro: Dados não encontrados. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+
+    analise_ia = data.get('analise_ia')
+    metricas_por_periodo = data.get('metrica', {}).get('metricas_por_periodo', {})
+
+    # Passar 'metricas_por_periodo' como JSON para o template
+    return render_template('analise_ia.html', analise_ia=analise_ia, metricas_por_periodo=metricas_por_periodo)
 
 @app.route('/get_disciplinas_por_data', methods=['POST'])
 def get_disciplinas_por_data():

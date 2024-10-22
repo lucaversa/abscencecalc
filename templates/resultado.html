@@ -45,6 +45,15 @@
                             {% endif %}
                         </a>
                     </li>
+                    <!-- Adicione o novo link aqui -->
+                    <li class="nav-item {% if request.endpoint == 'analise_ia' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('analise_ia') }}">
+                            <i class="fas fa-chart-bar"></i> Meu Progresso
+                            {% if request.endpoint == 'analise_ia' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
                 </ul>
             </div>
             <!-- Botão "Sair" Alinhado à Direita -->
@@ -55,7 +64,6 @@
             </span>
         </div>
     </nav>
-
     <div class="content-wrapper">
         <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
