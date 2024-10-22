@@ -139,7 +139,7 @@ def calcular_data_pode_faltar(aulas_restantes, faltas_permitidas, schedule_data,
             return "Você não pode faltar mais nenhuma aula"
     
     data_pode_faltar = data_corte + datetime.timedelta(days=1)
-    return f"Você pode faltar a partir de {data_pode_faltar.strftime('%d/%m/%Y')}"
+    return f"Você pode faltar o restante das aulas a partir de {data_pode_faltar.strftime('%d/%m/%Y')}"
     
 def calcular_porcentagem_faltas(faltas, ch):
     if ch == 0:
@@ -181,17 +181,50 @@ def calcular_aulas_restantes(schedule_data, cod_disc):
 
 def calcular_dias_restantes(subjects_days_dates, cod_disc):
     hoje = datetime.date.today()
-    dias_restantes = defaultdict(int)  # dia_da_semana: quantidade
+    dias_restantes = defaultdict(int)  # chave: "dia_semana" ou "dia_semana_pratica"
     dias_datas = subjects_days_dates.get(cod_disc, {})
+    
     for dia_semana, datas in dias_datas.items():
-        for data_str in datas.keys():
+        aulas_por_data = defaultdict(int)
+        for data_str, num_aulas in datas.items():
             try:
                 data_aula = datetime.datetime.strptime(data_str, "%Y-%m-%d").date()
+                if data_aula >= hoje:
+                    aulas_por_data[data_str] = num_aulas
             except ValueError:
-                continue  # Ignora datas inválidas
-            if data_aula >= hoje:
-                dias_restantes[dia_semana] += 1
-    return dias_restantes  # Retorna um dict com dia_semana: quantidade
+                continue
+
+        if not aulas_por_data:
+            continue
+
+        # Analisa o padrão de aulas para este dia da semana
+        contagens = list(aulas_por_data.values())
+        if not contagens:
+            continue
+
+        counter = Counter(contagens)
+        sorted_counts = sorted(counter.items(), key=lambda x: (x[1], -x[0]), reverse=True)
+        
+        # Se só tem um tipo de aula neste dia
+        if len(sorted_counts) == 1:
+            dias_restantes[f"{dia_semana}"] = len(aulas_por_data)
+            continue
+
+        # Se tem dois padrões diferentes (regular e prática)
+        aula_regular = min(sorted_counts[0][0], sorted_counts[1][0])
+        aula_pratica = max(sorted_counts[0][0], sorted_counts[1][0])
+
+        # Conta dias restantes para cada tipo
+        dias_regulares = sum(1 for num_aulas in aulas_por_data.values() if num_aulas == aula_regular)
+        dias_pratica = sum(1 for num_aulas in aulas_por_data.values() if num_aulas == aula_pratica)
+
+        # Armazena separadamente dias regulares e com prática
+        if dias_regulares > 0:
+            dias_restantes[f"{dia_semana}"] = dias_regulares
+        if dias_pratica > 0:
+            dias_restantes[f"{dia_semana}_pratica"] = dias_pratica
+
+    return dias_restantes
 
 # Função para atualizar o progresso
 def update_progress(session_id, phase, description, percentage):
@@ -390,7 +423,6 @@ def process_login_thread(username, password, session_id):
 
             update_progress(session_id, PHASE_PROCESSING, "Analisando padrões de aulas", 80)
 
-            # Função para mapear números para nomes dos dias da semana (inclui Sábado)
             def get_day_name(day_number, is_practical=False):
                 days = {
                     1: "Domingo",
@@ -399,10 +431,18 @@ def process_login_thread(username, password, session_id):
                     4: "Quarta-feira",
                     5: "Quinta-feira",
                     6: "Sexta-feira",
-                    7: "Sábado"  # Adicionado
+                    7: "Sábado"
                 }
                 base_name = days.get(day_number, "Dia inválido")
                 return f"{base_name} (com prática)" if is_practical else base_name
+            
+            def get_day_key(day_number, is_practical=False):
+                """Converte número do dia para chave do dicionário de dias restantes"""
+                if not isinstance(day_number, int) or day_number < 1 or day_number > 7:
+                    return None
+                
+                return f"{day_number}_pratica" if is_practical else str(day_number)
+
 
             # Criação do dicionário de aulas por matéria e dia da semana
             subjects_aulas_por_dia = defaultdict(list)
@@ -454,6 +494,7 @@ def process_login_thread(username, password, session_id):
                     num_aulas = aula['Aulas']
                     # Mapeia o nome do dia para o número
                     dia_num = None
+                    is_practical = False
                     for num, nome in {
                         1: "Domingo",
                         2: "Segunda-feira",
@@ -465,8 +506,14 @@ def process_login_thread(username, password, session_id):
                     }.items():
                         if nome in dia:  # Usamos 'in' para pegar tanto dias normais quanto com prática
                             dia_num = num
+                            is_practical = "(com prática)" in dia
                             break
-                    dias_restantes_na_semana = dias_restantes.get(dia_num, 0)
+
+                    if dia_num is None:
+                        continue  # Pula este dia se não for reconhecido
+
+                    day_key = get_day_key(dia_num, is_practical)
+                    dias_restantes_na_semana = dias_restantes.get(day_key, 0)
                     
                     # **Nova Condição: Apenas incluir o dia se houver aulas restantes**
                     if dias_restantes_na_semana <= 0:
@@ -489,6 +536,7 @@ def process_login_thread(username, password, session_id):
                         'dias_restantes': dias_restantes_na_semana,
                         'percentage_can_miss': percentage_can_miss
                     })
+
 
                 # Calcular a data a partir da qual o aluno pode faltar
                 data_pode_faltar = calcular_data_pode_faltar(
