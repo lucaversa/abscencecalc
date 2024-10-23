@@ -7,7 +7,6 @@ import markdown  # Importar a biblioteca markdown
 
 # Configurar a API Key de forma segura
 GENAI_API_KEY = os.environ.get("GENAI_API_KEY")  # Defina essa variável no seu ambiente
-# GENAI_API_KEY = "AIzaSyDngoemSHtclSXsoVlZe1Vnz50a8o7AcEg"
 
 if not GENAI_API_KEY:
     raise ValueError("A variável de ambiente 'GENAI_API_KEY' não está definida.")
