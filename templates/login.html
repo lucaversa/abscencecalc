@@ -10,6 +10,8 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
@@ -43,11 +45,10 @@
                         {% endif %}
                         {% endwith %}
 
-                        <h2 class="text-center mb-4">Bem-vindo 🐸</h2>
+                        <h2 class="text-center mb-4">AbscenceCalc <i class="fas fa-frog"></i></h2>
                         <p class="text-center mb-4">
-                            Este aplicativo permite que você acompanhe suas faltas e veja quantas aulas ainda pode
-                            faltar em cada disciplina.
-                            Para começar, faça login com seu usuário e senha do portal EduConnect.
+                            Este site permite que você acompanhe suas faltas e veja o seu progresso durante o curso.
+                            Para começar, faça login com seu usuário e senha do EduConnect.
                         </p>
 
                         <form id="login-form" action="{{ url_for('process_login') }}" method="post">

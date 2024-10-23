@@ -17,22 +17,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chart.js DataLabels plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <style>
-        /* Ajusta o tamanho do gráfico para ser responsivo */
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            /* Ajuste conforme necessário */
-        }
-    </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
         <a class="navbar-brand" href="#">
-            <i class="fas fa-calendar-alt"></i> AbscenceCalc
+            <i class="fas fa-frog"></i> AbscenceCalc
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
@@ -95,149 +86,192 @@
         {% endwith %}
 
         <div class="container mt-5">
-            <div class="resultado-card mb-4">
-                <div class="card-body">
-                    {% if analise_ia %}
-                    <div class="analysis-section">
-                        <!-- Renderizar o HTML gerado pela IA de forma segura -->
-                        {{ analise_ia | safe }}
-                    </div>
-                    <!-- Gráfico de Evolução da Média Global -->
-                    <div class="mt-5">
-                        <h3 class="chart-title">Evolução da Média por Período</h3>
-                        <div class="chart-container">
-                            <canvas id="evolucaoMediaChart"></canvas>
+            <div class="row">
+                <!-- Seção do Gráfico -->
+                <div class="col-12">
+                    <div class="resultado-card">
+                        <div class="card-body">
+                            <h3 class="chart-title">Evolução da Média por Período</h3>
+                            <div class="chart-container">
+                                <canvas id="evolucaoMediaChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    {% else %}
-                    <p class="text-muted">A análise ainda está sendo gerada. Por favor, volte mais tarde.</p>
-                    {% endif %}
                 </div>
-            </div>
 
+                <!-- Seção de Análise IA -->
+                <div class="col-12 mb-4">
+                    <div id="analysisContent">
+                        {% if analise_ia %}
+                        <div class="analysis-section">
+                            <!-- Renderizar o HTML gerado pela IA de forma segura -->
+                            {{ analise_ia | safe }}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">A análise ainda está sendo gerada. Por favor, volte mais tarde.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
         </div>
+    </div>
 
-        <footer class="footer mt-auto py-3 bg-light">
-            <div class="container text-center">
-                <span class="text-muted">
-                    AbscenceCalc (2024), todos os direitos reservados.
-                    <a href="https://wa.me/5535997030903" target="_blank" rel="noopener noreferrer" class="ml-2">
-                        <i class="fas fa-external-link-alt"></i> WhatsApp
-                    </a>
-                </span>
-            </div>
-        </footer>
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">
+                AbscenceCalc (2024), todos os direitos reservados.
+                <a href="https://wa.me/5535997030903" target="_blank" rel="noopener noreferrer" class="ml-2">
+                    <i class="fas fa-external-link-alt"></i> WhatsApp
+                </a>
+            </span>
+        </div>
+    </footer>
 
-        <!-- jQuery e Bootstrap JS -->
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery e Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- Scripts para animações -->
-        <script>
-            document.body.classList.add('fade-in');
-        </script>
+    <!-- Scripts para animações -->
+    <script>
+        document.body.classList.add('fade-in');
+    </script>
 
-        <!-- Script para o Gráfico -->
-        {% if metricas_por_periodo %}
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const ctx = document.getElementById('evolucaoMediaChart').getContext('2d');
-                const metricasPorPeriodo = {{ metricas_por_periodo | tojson | safe
-            }};
+    <!-- Script para o Gráfico -->
+    {% if metricas_por_periodo %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('evolucaoMediaChart').getContext('2d');
+            const metricasPorPeriodo = {{ metricas_por_periodo | tojson | safe
+        }};
 
-            console.log("Métricas por período:", metricasPorPeriodo);
+        console.log("Métricas por período:", metricasPorPeriodo);
 
-            const labels = Object.keys(metricasPorPeriodo).map(periodo => `Período ${periodo}`);
-            const dataValues = Object.values(metricasPorPeriodo).map(metrica => metrica.media);
+        const labels = Object.keys(metricasPorPeriodo).map(periodo => `Período ${periodo}`);
+        const dataValues = Object.values(metricasPorPeriodo).map(metrica => metrica.media);
 
-            console.log("Labels:", labels);
-            console.log("Data values:", dataValues);
+        console.log("Labels:", labels);
+        console.log("Data values:", dataValues);
 
-            // Encontrar o valor mínimo e máximo para ajustar a escala
-            const minValue = Math.min(...dataValues);
-            const maxValue = Math.max(...dataValues);
-            const yMin = Math.floor(minValue - 0.5); // Arredonda para baixo e subtrai 0.5
-            const yMax = Math.ceil(maxValue + 0.5); // Arredonda para cima e adiciona 0.5
+        // Encontrar o valor mínimo e máximo para ajustar a escala
+        const minValue = Math.min(...dataValues);
+        const maxValue = Math.max(...dataValues);
+        const yMin = Math.floor(minValue - 0.5); // Arredonda para baixo e subtrai 0.5
+        const yMax = Math.ceil(maxValue + 0.5); // Arredonda para cima e adiciona 0.5
 
-            const evolucaoMediaChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Média do Período',
-                        data: dataValues,
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            min: yMin,
-                            max: yMax,
-                            ticks: {
-                                stepSize: 0.5
-                            },
-                            title: {
-                                display: true,
-                                text: 'Média'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Período'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
+        const evolucaoMediaChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Média do Período',
+                    data: dataValues,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        min: yMin,
+                        max: yMax,
+                        ticks: {
+                            stepSize: 0.5
                         },
                         title: {
-                            display: false,
-                            text: 'Evolução da média por Período'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    return `Média: ${context.parsed.y.toFixed(2)}`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: (value) => value.toFixed(2),
-                            font: {
-                                weight: 'bold'
-                            }
+                            display: true,
+                            text: 'Média'
                         }
                     },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    elements: {
-                        line: {
-                            tension: 0.4
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Período'
                         }
                     }
                 },
-                plugins: [ChartDataLabels]
-            });
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    title: {
+                        display: false,
+                        text: 'Evolução da média por Período'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return `Média: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (value) => value.toFixed(2),
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        tension: 0.4
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
         });
+        });
+    </script>
+    {% endif %}
+
+    <!-- Script para dividir o conteúdo da análise IA -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const analysisContent = document.querySelector('#analysisContent .analysis-section');
+            if (analysisContent) {
+                const children = Array.from(analysisContent.children);
+                let newContent = '';
+                let currentSection = '';
+
+                children.forEach((child, index) => {
+                    if (child.tagName === 'P' && child.querySelector('strong') && child.textContent.trim() === child.querySelector('strong').textContent.trim()) {
+                        // Este é um título de seção
+                        if (currentSection) {
+                            newContent += `<div class="analysis-container">${currentSection}</div>`;
+                            currentSection = '';
+                        }
+                        // Remove o caractere ":" do final do texto do strong
+                        const strongElement = child.querySelector('strong');
+                        strongElement.textContent = strongElement.textContent.replace(/:\s*$/, '');
+                        currentSection += child.outerHTML;
+                    } else {
+                        currentSection += child.outerHTML;
+                    }
+                });
+
+                // Adicionar a última seção
+                if (currentSection) {
+                    newContent += `<div class="analysis-container">${currentSection}</div>`;
+                }
+
+                analysisContent.innerHTML = newContent;
 
 
-        </script>
-        {% endif %}
+            }
+        }); </script>
 
 </body>
 

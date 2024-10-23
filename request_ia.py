@@ -7,6 +7,7 @@ import markdown  # Importar a biblioteca markdown
 
 # Configurar a API Key de forma segura
 GENAI_API_KEY = os.environ.get("GENAI_API_KEY")  # Defina essa variável no seu ambiente
+# GENAI_API_KEY = "AIzaSyDngoemSHtclSXsoVlZe1Vnz50a8o7AcEg"
 
 if not GENAI_API_KEY:
     raise ValueError("A variável de ambiente 'GENAI_API_KEY' não está definida.")
@@ -38,20 +39,26 @@ def analyze_performance(metrica, info_aluno):
     try:
         # Construir o prompt conforme especificações
         prompt_instructions = (
-            "Por favor, faça uma análise abrangente e detalhada do desempenho acadêmico fornecido com base nas informações seguintes. "
-            "A análise deve ser adequada para uma interface de aplicativo, e incluir os seguintes elementos:\n\n"
-            "1. Visão geral do desempenho, incluindo a média global.\n"
-            "2. Evolução do desempenho entre os períodos, considerando métricas relevantes.\n"
-            "3. Análise dos pontos fortes com emojis (sempre enviar as notas e lembre-se que as notas são números inteiros e não porcentagem).\n"
-            "4. Áreas para melhoria com recomendações práticas e emojis (sempre enviar as notas e lembre-se que as notas são números inteiros e não porcentagem).\n"
-            "5. Avaliação da consistência das notas.\n"
-            "6. Diferenciação entre habilidades práticas e teóricas.\n"
-            "7. Sugestões práticas para melhorias e uso de emojis para manter o texto leve.\n"
-            "8. Destacar os pontos fortes e positivos a serem mantidos.\n\n"
-            "O texto deve ser envolvente, conciso, e utilizar uma linguagem que motive o usuário, incluindo o uso de emojis e frases curtas.\n\n"
-            "Utilize a referência: Média do Período ou Global abaixo de 75% não é bom (não cite essa frase diretamente).\n\n"
-            "Utilize tópicos mas não exagere para não poluir a visualização.\n\n"
-            "Aqui estão os dados para análise:\n"
+        "Por favor, faça uma análise abrangente e detalhada do desempenho acadêmico fornecido com base nas informações seguintes. "
+        "A análise deve ser adequada para uma interface de aplicativo e incluir os seguintes elementos, cada um começando com um título de seção em negrito e acompanhado de um emoji relevante dentro de um parágrafo HTML (<p><strong>📊 Título da Seção</strong></p>):\n\n"
+        "1. Visão geral do desempenho, incluindo a média global (em porcentagem).\n"
+        "2. Evolução do desempenho entre os períodos, considerando métricas relevantes (médias sempre serão em porcentagem).\n"
+        "3. Análise dos pontos fortes com emojis (sempre enviar as notas e lembre-se que as notas são números inteiros e não porcentagem).\n"
+        "4. Áreas para melhoria com recomendações práticas e emojis (sempre enviar as notas e lembre-se que as notas são números inteiros e não porcentagem).\n"
+        "5. Avaliação da consistência das notas.\n"
+        "6. Diferenciação entre habilidades práticas e teóricas.\n"
+        "7. Sugestões práticas para melhorias e uso de emojis para manter o texto leve.\n"
+        "8. Destacar os pontos fortes e positivos a serem mantidos.\n\n"
+        "O texto deve ser envolvente, conciso e utilizar uma linguagem que motive o usuário, incluindo o uso de emojis e frases curtas.\n\n"
+        "Utilize a referência: Média do Período ou Global abaixo de 75% não é bom (não cite essa frase diretamente).\n\n"
+        "Utilize tópicos, mas não exagere para não poluir a visualização.\n\n"
+        "**Formatação HTML:**\n"
+        "- Cada seção deve começar com um parágrafo contendo o título da seção em negrito e acompanhado de um emoji relevante. Exemplo:\n"
+        "  `<p><strong>📊 Visão Geral do Desempenho</strong></p>`\n"
+        "- O conteúdo de cada seção deve estar imediatamente abaixo do título correspondente, utilizando tags HTML apropriadas, como `<p>`, `<ul>`, `<li>`, etc.\n\n"
+        "- **Evite** utilizar delimitadores de blocos de código como ```html no início e ``` no final da saída.\n\n"
+        "A saída deve ser apenas o HTML necessário para renderizar as seções corretamente no seu aplicativo.\n\n"
+        "Aqui estão os dados para análise:\n"
         )
 
         # Serializar os dados para inclusão no prompt
