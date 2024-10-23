@@ -345,6 +345,27 @@
             });
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var navbar = document.querySelector('.custom-navbar');
+            var navbarToggler = document.querySelector('.navbar-toggler');
+            var contentWrapper = document.querySelector('.content-wrapper');
+
+            navbarToggler.addEventListener('click', function () {
+                setTimeout(function () {
+                    var navbarHeight = navbar.offsetHeight;
+                    contentWrapper.style.marginTop = navbarHeight + 'px';
+                }, 300); // Ajuste este delay conforme necessário
+            });
+
+            // Resetar o margin-top quando a janela for redimensionada
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 991.98) {
+                    contentWrapper.style.marginTop = '70px'; // Altura padrão da navbar
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

@@ -44,6 +44,9 @@ body {
 
 .content-wrapper {
     flex: 1 0 auto;
+    transition: margin-top 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .footer {
@@ -530,6 +533,7 @@ h2 {
     border-radius: 5px;
     padding: 8px 16px;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
 }
 
 .custom-navbar .btn-sair:hover {
@@ -537,29 +541,80 @@ h2 {
     transform: translateY(-2px);
 }
 
-@media (max-width: 767.98px) {
-    .custom-navbar .navbar-nav .nav-link {
-        margin: 10px 0;
-        /* Ajustar margem vertical em dispositivos móveis */
+@media (max-width: 991.98px) {
+    .custom-navbar .navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--header-bg-color);
+        padding: 15px;
+        border-radius: 0 0 15px 15px;
+        max-height: calc(100vh - 70px);
+        overflow-y: auto;
     }
 
-    /* Remover o separador em dispositivos móveis para evitar sobreposição */
-    .custom-navbar .navbar-nav .nav-link:not(:last-child)::after {
-        display: none;
+    .custom-navbar .navbar-nav {
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .custom-navbar .navbar-nav .nav-item {
+        width: 100%;
+        text-align: center;
+        margin: 5px 0;
+    }
+
+    .custom-navbar .navbar-nav .nav-link {
+        padding: 10px 15px;
+    }
+
+    .custom-navbar .navbar-text {
+        width: 100%;
+        text-align: center;
+        order: 1;
+        /* Move o botão "Sair" para o final */
+        margin-top: 10px;
+        /* Adiciona espaço acima do botão "Sair" */
     }
 
     .custom-navbar .btn-sair {
-        width: 100%;
+        display: inline-block;
+        width: auto;
+        padding: 10px 15px;
+        color: #FFFFFF;
+        background-color: var(--sair-color);
+        border: none;
         text-align: center;
-        margin-top: 10px;
-        /* Espaçamento acima do botão "Sair" */
+        font-weight: 500;
+        transition: background-color 0.3s ease;
     }
 
-    /* Ajustar a posição da navbar-center no modo colapsado */
+    .custom-navbar .btn-sair:hover,
+    .custom-navbar .btn-sair:focus {
+        background-color: var(--sair-hover);
+        color: #FFFFFF;
+    }
+
     .navbar-center {
         position: static;
         transform: none;
-        margin-top: 10px;
+        width: 100%;
+    }
+
+    .custom-navbar .navbar-nav .nav-link:not(:last-child)::after {
+        display: none;
+        /* Remove o separador em dispositivos móveis */
+    }
+
+    body {
+        padding-top: 56px;
+        /* Ajuste este valor conforme a altura da sua navbar em dispositivos móveis */
+    }
+
+    .content-wrapper {
+        transition: margin-top 0.3s ease;
     }
 }
 
@@ -1021,4 +1076,19 @@ textarea {
     position: relative;
     width: 100%;
     height: 400px;
+}
+
+.custom-navbar .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.5);
+    padding: 0.25rem 0.5rem;
+}
+
+.custom-navbar .navbar-toggler-icon {
+    width: 1.5em;
+    height: 1.5em;
+}
+
+.custom-navbar .navbar-toggler:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
 }
