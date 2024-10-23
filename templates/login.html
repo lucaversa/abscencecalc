@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Login no Portal</title>
 
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
@@ -48,7 +51,7 @@
                         <h2 class="text-center mb-4">AbscenceCalc <i class="fas fa-frog"></i></h2>
                         <p class="text-center mb-4">
                             Este site permite que você acompanhe suas faltas e veja o seu progresso durante o curso.
-                            Para começar, faça login com seu usuário e senha do EduConnect.
+                            Para começar, faça login com seu usuário (utilize o ponto) e senha do EduConnect.
                         </p>
 
                         <form id="login-form" action="{{ url_for('process_login') }}" method="post">

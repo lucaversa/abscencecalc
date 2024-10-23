@@ -118,7 +118,6 @@ h2 {
     font-weight: 700;
     margin-bottom: 25px;
     color: var(--primary-color);
-    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .login-card p {
@@ -300,6 +299,10 @@ h2 {
 @media (max-width: 767.98px) {
     .login-card {
         padding: 25px;
+    }
+
+    .login-card h2 {
+        font-size: 1.5rem;
     }
 
     .table td {
@@ -825,6 +828,7 @@ textarea {
     padding: 5px 10px;
     border-radius: 5px;
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .falta-reprovado {
@@ -900,6 +904,7 @@ textarea {
     font-weight: 700;
     font-size: 1.68rem;
     margin-bottom: 25px;
+    margin-right: 20px;
 }
 
 .resultado-card .table-container {
@@ -986,8 +991,6 @@ textarea {
 
 /* Títulos das seções */
 .analysis-container>p>strong {
-    display: block;
-    margin-bottom: 8px;
     /* Espaçamento reduzido */
     color: #006D6F;
     font-size: 1.4em;
@@ -995,10 +998,8 @@ textarea {
 
 /* Parágrafos dentro do container */
 .analysis-container>p {
-    margin-top: 0;
-    /* Remove margem superior */
     margin-bottom: 10px;
-    /* Define margem inferior consistente */
+
 }
 
 /* Listas dentro do container */
@@ -1243,5 +1244,5 @@ textarea {
     background-color: #ffffff;
     /* Fundo branco */
     margin-bottom: 20px;
-    border: none;
+
 }

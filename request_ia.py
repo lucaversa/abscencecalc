@@ -51,6 +51,7 @@ def analyze_performance(metrica, info_aluno):
         "O texto deve ser envolvente, conciso e utilizar uma linguagem que motive o usuário, incluindo o uso de emojis e frases curtas.\n\n"
         "Utilize a referência: Média do Período ou Global abaixo de 75% não é bom (não cite essa frase diretamente).\n\n"
         "Utilize tópicos, mas não exagere para não poluir a visualização.\n\n"
+        "NÃO UTILIZE asteriscos em nenhuma parte do texto.\n\n"
         "**Formatação HTML:**\n"
         "- Cada seção deve começar com um parágrafo contendo o título da seção em negrito e acompanhado de um emoji relevante. Exemplo:\n"
         "  `<p><strong>📊 Visão Geral do Desempenho</strong></p>`\n"

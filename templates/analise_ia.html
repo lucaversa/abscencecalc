@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Meu Progresso</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Google Fonts -->
@@ -91,7 +93,6 @@
                 <div class="col-12">
                     <div class="resultado-card">
                         <div class="card-body">
-                            <h3 class="chart-title">Evolução da Média por Período</h3>
                             <div class="chart-container">
                                 <canvas id="evolucaoMediaChart"></canvas>
                             </div>
@@ -272,28 +273,6 @@
 
             }
         }); </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var navbar = document.querySelector('.custom-navbar');
-            var navbarToggler = document.querySelector('.navbar-toggler');
-            var contentWrapper = document.querySelector('.content-wrapper');
-
-            navbarToggler.addEventListener('click', function () {
-                setTimeout(function () {
-                    var navbarHeight = navbar.offsetHeight;
-                    contentWrapper.style.marginTop = navbarHeight + 'px';
-                }, 300); // Ajuste este delay conforme necessário
-            });
-
-            // Resetar o margin-top quando a janela for redimensionada
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 991.98) {
-                    contentWrapper.style.marginTop = '70px'; // Altura padrão da navbar
-                }
-            });
-        });
-    </script>
 </body>
 
 </html>

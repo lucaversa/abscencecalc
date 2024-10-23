@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Simulador de Faltas</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Google Fonts -->
@@ -363,27 +365,6 @@
                         console.error('Erro:', error);
                         alert('Erro ao simular falta. Por favor, tente novamente. Detalhes: ' + JSON.stringify(error));
                     });
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var navbar = document.querySelector('.custom-navbar');
-            var navbarToggler = document.querySelector('.navbar-toggler');
-            var contentWrapper = document.querySelector('.content-wrapper');
-
-            navbarToggler.addEventListener('click', function () {
-                setTimeout(function () {
-                    var navbarHeight = navbar.offsetHeight;
-                    contentWrapper.style.marginTop = navbarHeight + 'px';
-                }, 300); // Ajuste este delay conforme necessário
-            });
-
-            // Resetar o margin-top quando a janela for redimensionada
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 991.98) {
-                    contentWrapper.style.marginTop = '70px'; // Altura padrão da navbar
-                }
             });
         });
     </script>

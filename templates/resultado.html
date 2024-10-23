@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Controle de Faltas</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Google Fonts -->
@@ -89,7 +91,7 @@
                         {% if resultado.porcentagem_faltas >= 25 %}
                         <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
                         {% endif %}
-                        {{ resultado.nome_materia }} (CH: {{ resultado.ch|int }})
+                        {{ resultado.nome_materia }}
                     </h2>
                     <span class="falta-status 
                         {% if resultado.porcentagem_faltas > 25 %}falta-reprovado
@@ -128,7 +130,7 @@
                                 <th>Dia da semana</th>
                                 <th>Quantos % vale?</th>
                                 <th>Quantas vezes posso faltar?</th>
-                                <th>Dias de aula restantes</th>
+                                <th>Dias restantes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -194,27 +196,6 @@
         document.body.classList.add('fade-in');
     </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var navbar = document.querySelector('.custom-navbar');
-            var navbarToggler = document.querySelector('.navbar-toggler');
-            var contentWrapper = document.querySelector('.content-wrapper');
-
-            navbarToggler.addEventListener('click', function () {
-                setTimeout(function () {
-                    var navbarHeight = navbar.offsetHeight;
-                    contentWrapper.style.marginTop = navbarHeight + 'px';
-                }, 300); // Ajuste este delay conforme necessário
-            });
-
-            // Resetar o margin-top quando a janela for redimensionada
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 991.98) {
-                    contentWrapper.style.marginTop = '70px'; // Altura padrão da navbar
-                }
-            });
-        });
-    </script>
 </body>
 
 </html>

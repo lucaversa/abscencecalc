@@ -509,7 +509,7 @@ def process_login_thread(username, password, session_id):
             logging.debug("Scraping concluído com sucesso")
         except Exception as e:
             logging.error(f"Erro durante o scraping: {e}", exc_info=True)
-            update_progress(session_id, PHASE_SCRAPING, f"Erro durante o scraping: {e}", 100)
+            update_progress(session_id, PHASE_SCRAPING, f"Erro: {e}", 100)
             return
 
         if data1 is None or data2 is None:
@@ -885,8 +885,9 @@ def process_login_thread(username, password, session_id):
 
              # Chamar a função de análise da IA
             logging.debug("Chamando a função de análise de desempenho da IA")
+            update_progress(session_id, PHASE_PROCESSING, "Analisando seu progresso no curso...", 80)
             analise_ia = analyze_performance(resultados_metrica, informacoes_aluno_filtradas)
-
+            
             # Armazenar a análise da IA no RESULTS
             with results_lock:
                 RESULTS[session_id]['analise_ia'] = analise_ia
