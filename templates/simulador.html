@@ -118,7 +118,6 @@
                                         </div>
                                     </div>
                                     <div class="disciplinas-container" style="display: none;">
-                                        <h4 class="mt-2">Disciplinas do dia:</h4>
                                         <button type="button"
                                             class="btn btn-secondary btn-sm mb-2 toggle-all">Selecionar/Deselecionar
                                             Todos</button>
@@ -128,24 +127,30 @@
                             </div>
                             <button type="button" id="add-data" class="btn btn-secondary mb-3">Adicionar outra
                                 data</button>
-                            <button type="submit" class="btn btn-simular btn-block mt-4">Simular falta(s)</button>
+                            <button type="submit" class="btn btn-simular btn-block mt-4">Simular</button>
                         </form>
 
                         <div id="resultado-simulacao" class="mt-4" style="display: none;">
-                            <h3>Resultado da Simulação</h3>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="thead-dark">
-                                        <tr>
-                                            <th>Disciplina</th>
-                                            <th>Faltas (Atual → Simulada)</th>
-                                            <th>% de Faltas (Atual → Simulada)</th>
-                                            <th>Faltas Permitidas Restantes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="resultado-tabela">
-                                    </tbody>
-                                </table>
+                            <div class="simulacao-card mb-4">
+
+                                <!-- Corpo do Cartão -->
+                                <div class="card-body">
+                                    <div class="simulacao-table-container">
+                                        <table class="simulacao-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Disciplina</th>
+                                                    <th>Faltas</th>
+                                                    <th>Percentual</th>
+                                                    <th>Restantes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="resultado-tabela">
+                                                <!-- Linhas da tabela serão inseridas dinamicamente pelo JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -172,6 +177,21 @@
     <!-- Scripts para o Simulador -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
+            const today = new Date().toISOString().split('T')[0]; // Obtém a data de hoje no formato 'YYYY-MM-DD'
+            const dataInputs = document.querySelectorAll('.data-falta'); // Seleciona todos os inputs de data
+
+            // Define o atributo min para todos os inputs de data
+            dataInputs.forEach(input => {
+                input.setAttribute('min', today);
+            });
+
+            // Quando um novo campo de data for adicionado, também aplicar a restrição
+            document.getElementById('add-data').addEventListener('click', function () {
+                const newDateInput = document.querySelector('.data-entry:last-child .data-falta');
+                newDateInput.setAttribute('min', today);
+            });
+
             const form = document.getElementById('simulador-form');
             const datasContainer = document.getElementById('datas-container');
             const addDataButton = document.getElementById('add-data');
@@ -193,7 +213,6 @@
                         </div>
                     </div>
                     <div class="disciplinas-container" style="display: none;">
-                        <h4 class="mt-2">Disciplinas do dia:</h4>
                         <button type="button" class="btn btn-secondary btn-sm mb-2 toggle-all">Selecionar/Deselecionar Todos</button>
                         <div class="disciplinas-list"></div>
                     </div>
@@ -304,6 +323,7 @@
                         resultadoTabela.innerHTML = '';
                         data.sort((a, b) => b.porcentagem_faltas - a.porcentagem_faltas);
                         data.forEach((disciplina, index) => {
+                            console.log(disciplina);
                             const row = document.createElement('tr');
                             const faltasAtuais = disciplina.faltas_atuais;
                             const faltasSimuladas = disciplina.faltas;
@@ -313,18 +333,19 @@
                                 `<span class="faltas-alteradas">${faltasAtuais} → ${faltasSimuladas}</span>` :
                                 `${faltasAtuais}`;
                             const porcentagemCell = porcentagemAtual !== porcentagemSimulada ?
-                                `<span class="faltas-alteradas">${porcentagemAtual}% → ${porcentagemSimulada}%</span>` :
+                                `<div class="porcentagem-alterada-box">${porcentagemAtual}% → ${porcentagemSimulada}%</div>` :
                                 `${porcentagemAtual}%`;
+                            const faltasRestantesCell = `<div class="faltas-restantes-box">${disciplina.faltas_permitidas_info}</div>`;
                             row.innerHTML = `
                                 <td>${disciplina.nome_materia}</td>
                                 <td>${faltasCell}</td>
                                 <td>${porcentagemCell}</td>
-                                <td>${disciplina.faltas_permitidas_info}</td>
+                                <td>${faltasRestantesCell}</td>
                             `;
                             if (disciplina.porcentagem_faltas > 25) {
-                                row.classList.add('bg-danger', 'text-white');
-                            } else if (index % 2 === 0) {
-                                row.classList.add('table-striped-row');
+                                const disciplinaCell = row.querySelector('td:first-child');
+                                disciplinaCell.classList.add('text-danger', 'font-weight-bold'); // Aplica a cor e deixa o texto em negrito
+                                disciplinaCell.innerHTML = `🚨 ${disciplinaCell.innerHTML}`; // Adiciona o ícone de alerta antes do texto
                             }
                             resultadoTabela.appendChild(row);
                         });

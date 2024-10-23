@@ -1122,7 +1122,7 @@ def simular_falta():
         else:
             porcentagem_faltas_permitidas = 0
 
-        disciplina_simulada['faltas_permitidas_info'] = f"{disciplina_simulada['faltas_permitidas_restantes']} ({porcentagem_faltas_permitidas:.2f}%)"
+        disciplina_simulada['faltas_permitidas_info'] = f"{disciplina_simulada['faltas_permitidas_restantes']} restantes"
 
         simulacao_resultados.append(disciplina_simulada)
 

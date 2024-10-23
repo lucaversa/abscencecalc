@@ -1092,3 +1092,156 @@ textarea {
     outline: none;
     box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
 }
+
+/* Estilos para o cartão de simulação */
+.simulacao-card {
+    background-color: #ffffff;
+    padding: 0px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Cabeçalho personalizado do cartão de simulação */
+.simulacao-card-header {
+    padding: 0px 0px 25px 0px;
+    background-color: transparent;
+    border-bottom: none;
+}
+
+/* Título do cartão de simulação */
+.simulacao-card-title {
+    color: #006D6F;
+    font-weight: 700;
+    font-size: 1.68rem;
+    margin-bottom: 25px;
+}
+
+/* Tabela de simulação */
+.simulacao-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.simulacao-table thead th {
+    border: none;
+    background-color: transparent;
+    color: #006D6F;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 6px 4px;
+    text-align: left;
+    font-weight: bold;
+    border-bottom: 1.3px solid rgba(0, 0, 0, 0.1);
+    /* Mantém o negrito */
+}
+
+.simulacao-table thead {
+    border-bottom: 2px solid #e0e0e0;
+    /* Cor cinza suave */
+}
+
+.simulacao-table td {
+    vertical-align: middle;
+    padding: 6px 4px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 400;
+    text-align: left;
+    color: #005a5a;
+}
+
+.simulacao-table td:first-child {
+    font-weight: 400;
+    color: #004d4d;
+}
+
+/* Estilos para o box com aumento de porcentagem */
+.porcentagem-alterada-box {
+    background-color: #dc3545;
+    /* Fundo vermelho */
+    color: white;
+    /* Texto branco */
+    border-radius: 8px;
+    /* Bordas arredondadas */
+    padding: 5px 10px;
+    /* Espaçamento interno */
+    display: inline-block;
+    /* Para garantir que o box envolva o texto */
+    font-weight: bold;
+    /* Deixa o texto em negrito */
+    text-align: center;
+    /* Centraliza o texto */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos para a box de Faltas Permitidas Restantes */
+.faltas-restantes-box {
+    background-color: #f0fdf4;
+    /* Fundo suave (verde claro) */
+    color: #198754;
+    /* Texto verde escuro */
+    border-radius: 8px;
+    /* Bordas arredondadas */
+    padding: 5px 10px;
+    /* Espaçamento interno */
+    display: inline-block;
+    /* Para garantir que o box envolva o texto */
+    font-weight: bold;
+    /* Texto em negrito */
+    text-align: center;
+    /* Centraliza o texto */
+    border: 1px solid #d4edda;
+    /* Borda sutil */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* Sombra leve */
+}
+
+/* Responsividade para a tabela de simulação */
+@media (max-width: 767.98px) {
+    .simulacao-card {
+        padding: 25px;
+    }
+
+    .simulacao-table tr {
+        margin-bottom: 12px;
+    }
+
+    .simulacao-table td {
+        padding-left: 50%;
+        padding-bottom: 6px;
+        position: relative;
+    }
+
+    .simulacao-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+}
+
+/* Estilo para todos os botões mencionados */
+.btn-simular,
+.remove-data,
+.toggle-all,
+#add-data {
+    font-weight: bold;
+    font-size: 0.9rem;
+    /* Deixa o texto dos botões em negrito */
+}
+
+/* Estilo para o container de adição de novas datas */
+.data-entry {
+    border-radius: 20px;
+    /* Bordas arredondadas */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Sombra suave */
+    padding: 15px;
+    /* Espaçamento interno */
+    background-color: #ffffff;
+    /* Fundo branco */
+    margin-bottom: 20px;
+    border: none;
+}
