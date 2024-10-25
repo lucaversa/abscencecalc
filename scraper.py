@@ -1,5 +1,3 @@
-# scraper.py
-
 import json
 import logging
 from collections import defaultdict
@@ -20,12 +18,13 @@ logging.basicConfig(level=logging.DEBUG)
 LOGIN_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/web/app/edu/PortalEducacional/login/"
 FALTAS_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/GradeCurricular/EnsinoSuperior"
 HORARIO_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/QuadroHorarioAluno"
+NOTA_ETAPA_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/NotaEtapa"
+AVALIACAO_ALUNO_PERIODO_LETIVO_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/AvaliacaoAlunoPeriodoLetivo"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/112.0.0.0 Safari/537.36"
 )
-
 
 def scrape_portal(username, password, session_id, update_progress_callback):
     """
@@ -38,7 +37,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         update_progress_callback (function): Função de callback para atualizar o progresso.
 
     Returns:
-        tuple: Dados de faltas e horários ou (None, None) em caso de erro.
+        tuple: Dados de faltas, horários, notas e avaliações ou (None, ...) em caso de erro.
     """
 
     def scraper_progress(description, percentage):
@@ -58,12 +57,12 @@ def scrape_portal(username, password, session_id, update_progress_callback):
 
     try:
         # Passo 1: Acessar o portal do aluno
-        scraper_progress("Acessando o EduConnect", 10)
+        scraper_progress("Acessando o EduConnect", 5)
         driver.get(LOGIN_URL)
 
         # Passo 2: Fazer login no portal
         try:
-            scraper_progress("Localizando campos de login", 20)
+            scraper_progress("Localizando campos de login", 10)
             wait = WebDriverWait(driver, 20)
 
             # Esperar até que os campos de usuário e senha estejam clicáveis
@@ -71,25 +70,25 @@ def scrape_portal(username, password, session_id, update_progress_callback):
             password_field = wait.until(EC.element_to_be_clickable((By.ID, "Pass")))
 
             # Preencher os campos de usuário e senha
-            scraper_progress("Preenchendo campos de login", 30)
+            scraper_progress("Preenchendo campos de login", 20)
             username_field.send_keys(username)
             password_field.send_keys(password)
 
             # Submeter o formulário de login
-            scraper_progress("Submetendo o formulário de login", 40)
+            scraper_progress("Submetendo o formulário de login", 30)
             password_field.send_keys(Keys.RETURN)
 
             # Esperar até que o elemento pós-login apareça
-            scraper_progress("Aguardando confirmação de login", 50)
+            scraper_progress("Aguardando confirmação de login", 40)
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "span.ico-mural")))
-            scraper_progress("Login realizado com sucesso", 60)
+            scraper_progress("Login realizado com sucesso", 50)
         except Exception as e:
             logging.exception("Erro durante o login:")
             scraper_progress(f"Erro durante o login: {e}", 100)
-            return None, None
+            return None, None, None, None
 
         # Passo 3: Capturar os cookies após o login
-        scraper_progress("Capturando cookies após o login", 70)
+        scraper_progress("Capturando cookies após o login", 55)
         selenium_cookies = driver.get_cookies()
         logging.debug(f"Cookies capturados pelo Selenium: {selenium_cookies}")
 
@@ -110,7 +109,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         logging.debug(f"Cookies na sessão do requests: {session_requests.cookies.get_dict()}")
 
         # Passo 4: Fazer requisições com requests usando os cookies capturados
-        scraper_progress("Fazendo requisições para obter dados", 80)
+        scraper_progress("Fazendo requisições para obter dados", 60)
 
         # Requisição para dados de faltas
         logging.debug(f"Fazendo requisição para: {FALTAS_URL}")
@@ -118,10 +117,10 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         if response_faltas.status_code == 200:
             try:
                 data_faltas = response_faltas.json()
-                logging.debug("Dados da primeira requisição obtidos com sucesso.")
-                scraper_progress("Dados de faltas obtidos", 85)
+                logging.debug("Dados de faltas obtidos com sucesso.")
+                scraper_progress("Dados de faltas obtidos", 65)
             except json.JSONDecodeError:
-                logging.error("Erro ao decodificar JSON da primeira requisição.")
+                logging.error("Erro ao decodificar JSON dos dados de faltas.")
                 data_faltas = None
                 scraper_progress("Erro ao decodificar dados de faltas", 100)
         else:
@@ -135,10 +134,10 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         if response_horario.status_code == 200:
             try:
                 data_horario = response_horario.json()
-                logging.debug("Dados da segunda requisição obtidos com sucesso.")
-                scraper_progress("Dados de horário obtidos", 90)
+                logging.debug("Dados de horário obtidos com sucesso.")
+                scraper_progress("Dados de horário obtidos", 70)
             except json.JSONDecodeError:
-                logging.error("Erro ao decodificar JSON da segunda requisição.")
+                logging.error("Erro ao decodificar JSON dos dados de horário.")
                 data_horario = None
                 scraper_progress("Erro ao decodificar dados de horário", 100)
         else:
@@ -146,8 +145,42 @@ def scrape_portal(username, password, session_id, update_progress_callback):
             data_horario = None
             scraper_progress(f"Erro na requisição de horário: Status {response_horario.status_code}", 100)
 
+        # Requisição para dados de notas (NotaEtapa)
+        logging.debug(f"Fazendo requisição para: {NOTA_ETAPA_URL}")
+        response_nota_etapa = session_requests.get(NOTA_ETAPA_URL)
+        if response_nota_etapa.status_code == 200:
+            try:
+                data_nota_etapa = response_nota_etapa.json()
+                logging.debug("Dados de notas obtidos com sucesso.")
+                scraper_progress("Dados de notas obtidos", 80)
+            except json.JSONDecodeError:
+                logging.error("Erro ao decodificar JSON dos dados de notas.")
+                data_nota_etapa = None
+                scraper_progress("Erro ao decodificar dados de notas", 100)
+        else:
+            logging.error(f"Erro na requisição para {NOTA_ETAPA_URL}: Status {response_nota_etapa.status_code}")
+            data_nota_etapa = None
+            scraper_progress(f"Erro na requisição de notas: Status {response_nota_etapa.status_code}", 100)
+
+        # Requisição para dados de avaliações (AvaliacaoAlunoPeriodoLetivo)
+        logging.debug(f"Fazendo requisição para: {AVALIACAO_ALUNO_PERIODO_LETIVO_URL}")
+        response_avaliacao = session_requests.get(AVALIACAO_ALUNO_PERIODO_LETIVO_URL)
+        if response_avaliacao.status_code == 200:
+            try:
+                data_avaliacao = response_avaliacao.json()
+                logging.debug("Dados de avaliações obtidos com sucesso.")
+                scraper_progress("Dados de avaliações obtidos", 90)
+            except json.JSONDecodeError:
+                logging.error("Erro ao decodificar JSON dos dados de avaliações.")
+                data_avaliacao = None
+                scraper_progress("Erro ao decodificar dados de avaliações", 100)
+        else:
+            logging.error(f"Erro na requisição para {AVALIACAO_ALUNO_PERIODO_LETIVO_URL}: Status {response_avaliacao.status_code}")
+            data_avaliacao = None
+            scraper_progress(f"Erro na requisição de avaliações: Status {response_avaliacao.status_code}", 100)
+
         scraper_progress("Dados obtidos com sucesso", 100)
-        return data_faltas, data_horario
+        return data_faltas, data_horario, data_nota_etapa, data_avaliacao
 
     finally:
         # Fechar o navegador

@@ -120,16 +120,19 @@ h2 {
     color: var(--primary-color);
 }
 
+.small-text {
+    font-size: 0.95rem !important;
+}
+
 .login-card p {
-    font-weight: 400;
     margin-bottom: 20px;
     line-height: 1.6;
-    color: #555;
+    color: #000000;
 }
 
 .login-card p.info-bold {
     font-weight: 700;
-    color: #333;
+    color: #000000;
 }
 
 .login-card .form-control {
@@ -145,7 +148,7 @@ h2 {
 
 .login-card label {
     font-weight: 700;
-    color: #333;
+    color: #000000;
 }
 
 .login-card .btn-primary {
