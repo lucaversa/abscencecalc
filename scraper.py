@@ -18,7 +18,6 @@ logging.basicConfig(level=logging.DEBUG)
 LOGIN_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/web/app/edu/PortalEducacional/login/"
 FALTAS_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/GradeCurricular/EnsinoSuperior"
 HORARIO_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/QuadroHorarioAluno"
-NOTA_ETAPA_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/NotaEtapa"
 AVALIACAO_ALUNO_PERIODO_LETIVO_URL = "https://fundacaoeducacional132827.rm.cloudtotvs.com.br/FrameHTML/RM/API/TOTVSEducacional/AvaliacaoAlunoPeriodoLetivo"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -37,7 +36,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         update_progress_callback (function): Função de callback para atualizar o progresso.
 
     Returns:
-        tuple: Dados de faltas, horários, notas e avaliações ou (None, ...) em caso de erro.
+        tuple: Dados de faltas, horários e avaliações ou (None, ...) em caso de erro.
     """
 
     def scraper_progress(description, percentage):
@@ -85,7 +84,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
         except Exception as e:
             logging.exception("Erro durante o login:")
             scraper_progress(f"Erro durante o login: {e}", 100)
-            return None, None, None, None
+            return None, None, None
 
         # Passo 3: Capturar os cookies após o login
         scraper_progress("Capturando cookies após o login", 55)
@@ -145,23 +144,6 @@ def scrape_portal(username, password, session_id, update_progress_callback):
             data_horario = None
             scraper_progress(f"Erro na requisição de horário: Status {response_horario.status_code}", 100)
 
-        # Requisição para dados de notas (NotaEtapa)
-        logging.debug(f"Fazendo requisição para: {NOTA_ETAPA_URL}")
-        response_nota_etapa = session_requests.get(NOTA_ETAPA_URL)
-        if response_nota_etapa.status_code == 200:
-            try:
-                data_nota_etapa = response_nota_etapa.json()
-                logging.debug("Dados de notas obtidos com sucesso.")
-                scraper_progress("Dados de notas obtidos", 80)
-            except json.JSONDecodeError:
-                logging.error("Erro ao decodificar JSON dos dados de notas.")
-                data_nota_etapa = None
-                scraper_progress("Erro ao decodificar dados de notas", 100)
-        else:
-            logging.error(f"Erro na requisição para {NOTA_ETAPA_URL}: Status {response_nota_etapa.status_code}")
-            data_nota_etapa = None
-            scraper_progress(f"Erro na requisição de notas: Status {response_nota_etapa.status_code}", 100)
-
         # Requisição para dados de avaliações (AvaliacaoAlunoPeriodoLetivo)
         logging.debug(f"Fazendo requisição para: {AVALIACAO_ALUNO_PERIODO_LETIVO_URL}")
         response_avaliacao = session_requests.get(AVALIACAO_ALUNO_PERIODO_LETIVO_URL)
@@ -169,7 +151,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
             try:
                 data_avaliacao = response_avaliacao.json()
                 logging.debug("Dados de avaliações obtidos com sucesso.")
-                scraper_progress("Dados de avaliações obtidos", 90)
+                scraper_progress("Dados de avaliações obtidos", 80)
             except json.JSONDecodeError:
                 logging.error("Erro ao decodificar JSON dos dados de avaliações.")
                 data_avaliacao = None
@@ -180,7 +162,7 @@ def scrape_portal(username, password, session_id, update_progress_callback):
             scraper_progress(f"Erro na requisição de avaliações: Status {response_avaliacao.status_code}", 100)
 
         scraper_progress("Dados obtidos com sucesso", 100)
-        return data_faltas, data_horario, data_nota_etapa, data_avaliacao
+        return data_faltas, data_horario, data_avaliacao
 
     finally:
         # Fechar o navegador

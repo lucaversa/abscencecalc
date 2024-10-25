@@ -71,6 +71,28 @@ def get_color(porcentagem_faltas):
 # Registrar a função como um filtro Jinja
 app.jinja_env.filters['get_color'] = get_color
 
+# Função para mapear o desempenho para uma cor (usado no controle_notas.html)
+def get_color_from_performance(performance):
+    """
+    Retorna uma cor baseada no desempenho (0 a 100).
+    Cores variam de vermelho (baixo desempenho) a verde (alto desempenho).
+    """
+    if performance >= 85:
+        return '#20B2AA'  # Turquesa (bom desempenho)
+    elif performance >= 70:
+        return '#66CDAA'  # Aquamarine
+    elif performance >= 60:
+        return '#F4A460'  # Sanja
+    elif performance >= 40:
+        return '#FFD700'  # Dourado
+    elif performance >= 20:
+        return '#FF8C00'  # Laranja escuro
+    else:
+        return '#FF0000'  # Vermelho (baixo desempenho)
+
+# Registrar a função como um filtro Jinja
+app.jinja_env.filters['get_color_from_performance'] = get_color_from_performance
+
 # Função para atribuir um ID de sessão único
 def assign_session_id():
     if 'session_id' not in session:
@@ -505,7 +527,7 @@ def process_login_thread(username, password, session_id):
 
         # Passo 1: Acessar o portal e fazer login
         try:
-            data1, data2 = scrape_portal(username, password, session_id, update_progress)
+            data1, data2, data_avaliacao = scrape_portal(username, password, session_id, update_progress)
             logging.debug("Scraping concluído com sucesso")
         except Exception as e:
             logging.error(f"Erro durante o scraping: {e}", exc_info=True)
@@ -872,6 +894,28 @@ def process_login_thread(username, password, session_id):
                 'disciplinas_ordenadas': disciplinas_ordenadas
             }
 
+            # Processar data_avaliacao
+            try:
+                avaliacao_data = data_avaliacao.get('data', [])
+                logging.debug("Dados de avaliação extraídos com sucesso.")
+                update_progress(session_id, PHASE_PROCESSING, "Processando dados de avaliação", 85)
+            except KeyError as e:
+                logging.error(f"Chave ausente em data_avaliacao: {e}")
+                update_progress(session_id, PHASE_PROCESSING, f"Erro: Chave ausente no JSON de avaliação: {e}", 100)
+                return
+
+            # Filtrar os campos ETAPA, DISCIPLINA, MEDIA, VALOR, NOTA
+            notas = []
+            for item in avaliacao_data:
+                nota_info = {
+                    'ETAPA': item.get('ETAPA'),
+                    'DISCIPLINA': item.get('DISCIPLINA'),
+                    'MEDIA': item.get('MEDIA'),
+                    'VALOR': item.get('VALOR'),
+                    'NOTA': item.get('NOTA')
+                }
+                notas.append(nota_info)
+
             # Armazenar resultados no dicionário RESULTS
             logging.debug(f"Armazenando resultados no RESULTS para session_id: {session_id}")
             with results_lock:
@@ -879,7 +923,8 @@ def process_login_thread(username, password, session_id):
                     'resultados': resultados,
                     'horario_data': horario_data, 
                     'metrica': resultados_metrica,
-                    'info_aluno': informacoes_aluno_filtradas
+                    'info_aluno': informacoes_aluno_filtradas,
+                    'notas': notas
                 }
             logging.debug(f"Dados armazenados em RESULTS[{session_id}]: chaves: {list(RESULTS[session_id].keys())}")
 
@@ -1129,6 +1174,213 @@ def simular_falta():
 
     return jsonify(simulacao_resultados)
 
+@app.route('/controle_notas')
+def controle_notas():
+    session_id = session.get('session_id')
+    logging.debug(f"/controle_notas: session_id = {session_id}")
+
+    if not session_id:
+        flash("Erro: Sessão inválida. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+
+    with results_lock:
+        data = RESULTS.get(session_id)
+
+    if not data or 'notas' not in data:
+        flash("Erro: Dados de notas não encontrados. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+
+    notas = data['notas']
+
+    # Processar as notas para agrupar por disciplina e ETAPA
+    disciplinas_notas = {}
+    for nota in notas:
+        disciplina = nota.get('DISCIPLINA')
+        etapa = nota.get('ETAPA')
+        if not disciplina or not etapa:
+            continue  # Ignora se disciplina ou etapa estiverem ausentes
+        if etapa == 'Exame Especial':
+            continue  # Ignora etapas de Exame Especial
+
+        nota_valor = nota.get('NOTA')
+        valor = nota.get('VALOR')
+        media = nota.get('MEDIA')
+
+        # Verificar se NOTA e VALOR estão presentes e não são None ou vazios
+        if nota_valor in (None, '') or valor in (None, ''):
+            continue  # Ignora etapas com NOTA ou VALOR inválidos
+
+        # Tentar converter NOTA e VALOR para float
+        try:
+            nota_num = float(str(nota_valor).replace(',', '.').strip())
+            valor_num = float(str(valor).replace(',', '.').strip())
+        except (ValueError, TypeError):
+            continue  # Ignora se NOTA ou VALOR não são válidos
+
+        # Se MEDIA é None ou '', considerar como 60% de VALOR
+        if media in (None, ''):
+            media_num = valor_num * 0.6
+        else:
+            try:
+                media_num = float(str(media).replace(',', '.').strip())
+            except (ValueError, TypeError):
+                media_num = valor_num * 0.6  # Se MEDIA não for válida, usar 60% de VALOR
+
+        # Prosseguir com o processamento
+        if disciplina not in disciplinas_notas:
+            disciplinas_notas[disciplina] = {
+                'ETAPAs': {},
+                'total_nota': 0.0,
+                'total_valor': 0.0,
+                'sum_media': 0.0,
+            }
+
+        if etapa not in disciplinas_notas[disciplina]['ETAPAs']:
+            disciplinas_notas[disciplina]['ETAPAs'][etapa] = {
+                'nota_nominal': 0.0,
+                'VALOR': 0.0,
+                'MEDIA': 0.0,
+                'performance': 0.0,
+                'width': 0.0,
+            }
+
+        disciplinas_notas[disciplina]['ETAPAs'][etapa]['nota_nominal'] += nota_num
+        disciplinas_notas[disciplina]['ETAPAs'][etapa]['VALOR'] += valor_num
+        disciplinas_notas[disciplina]['ETAPAs'][etapa]['MEDIA'] += media_num
+
+        disciplinas_notas[disciplina]['total_nota'] += nota_num
+        disciplinas_notas[disciplina]['total_valor'] += valor_num
+        disciplinas_notas[disciplina]['sum_media'] += media_num
+
+    # Calcular o desempenho para cada ETAPA e a largura da barra
+    for disciplina, data_disciplinas in disciplinas_notas.items():
+        total_nota = data_disciplinas['total_nota']
+        total_valor = data_disciplinas['total_valor']
+        sum_media = data_disciplinas['sum_media']
+
+        # Desempenho total
+        if total_valor > 0:
+            total_performance = (total_nota / total_valor) * 100
+        else:
+            total_performance = 0.0
+        data_disciplinas['total_performance'] = round(total_performance, 2)
+
+        # Definir a média como a soma das médias das etapas
+        average = sum_media
+        data_disciplinas['average'] = round(average, 2)
+
+        # Diferença da média (total_nota - average)
+        data_disciplinas['difference_from_average'] = round(total_nota - average, 2)
+
+        for etapa, data_etapa in data_disciplinas['ETAPAs'].items():
+            valor = data_etapa['VALOR']
+            nota = data_etapa['nota_nominal']
+            media = data_etapa['MEDIA']
+            if valor > 0:
+                performance = (nota / valor) * 100
+            else:
+                performance = 0.0
+            data_etapa['performance'] = round(performance, 2)
+
+            # A largura da seção da barra é proporcional à NOTA obtida na etapa
+            data_etapa['width'] = (nota / 100) * 100  # Calcula a porcentagem baseada em 100 pontos
+
+    # Ordenar as disciplinas por nome
+    disciplinas_ordenadas = dict(sorted(disciplinas_notas.items()))
+
+    # Novo código para calcular o aproveitamento necessário
+    notas_completas = data['notas']
+
+    # Dicionário para armazenar os novos cálculos
+    disciplinas_calculos = {}
+
+    for nota in notas_completas:
+        disciplina = nota.get('DISCIPLINA')
+        etapa = nota.get('ETAPA')
+        if not disciplina or not etapa:
+            continue  # Ignora se disciplina ou etapa estiverem ausentes
+        if etapa == 'Exame Especial':
+            continue  # Ignora etapas de Exame Especial
+
+        valor = nota.get('VALOR')
+        media = nota.get('MEDIA')
+        nota_valor = nota.get('NOTA')
+
+        # Verificar se VALOR está presente e não é None ou vazio
+        if valor in (None, ''):
+            continue  # Ignora etapas com VALOR inválido
+
+        # Tentar converter VALOR para float
+        try:
+            valor_num = float(str(valor).replace(',', '.').strip())
+        except (ValueError, TypeError):
+            continue  # Ignora se VALOR não é válido
+
+        # Se MEDIA é None ou '', considerar como 60% de VALOR
+        if media in (None, ''):
+            media_num = valor_num * 0.6
+        else:
+            try:
+                media_num = float(str(media).replace(',', '.').strip())
+            except (ValueError, TypeError):
+                media_num = valor_num * 0.6  # Se MEDIA não for válida, usar 60% de VALOR
+
+        # Inicializar o dicionário da disciplina se ainda não existe
+        if disciplina not in disciplinas_calculos:
+            disciplinas_calculos[disciplina] = {
+                'sum_media': 0.0,                # Soma de todas as médias
+                'sum_notas': 0.0,                # Soma de todas as notas
+                'sum_valor_distribuido': 0.0,    # Soma de VALOR onde NOTA está presente
+            }
+
+        # Atualizar a soma de todas as médias
+        disciplinas_calculos[disciplina]['sum_media'] += media_num
+
+        # Se NOTA está presente, adicionar ao sum_notas e sum_valor_distribuido
+        if nota_valor not in (None, ''):
+            try:
+                nota_num = float(str(nota_valor).replace(',', '.').strip())
+                disciplinas_calculos[disciplina]['sum_notas'] += nota_num
+                disciplinas_calculos[disciplina]['sum_valor_distribuido'] += valor_num
+            except (ValueError, TypeError):
+                pass  # Ignora se a conversão falhar
+
+    # Agora, para cada disciplina, calcular o aproveitamento necessário
+    for disciplina, calculos in disciplinas_calculos.items():
+        sum_media = calculos['sum_media']
+        sum_notas = calculos['sum_notas']
+        sum_valor_distribuido = calculos['sum_valor_distribuido']
+
+        # Pontos faltantes para atingir a média fixa de 60
+        required_points = max(0, 60 - sum_notas)
+
+        # Pontos ainda a serem distribuídos
+        remaining_valor = max(0, 100 - sum_valor_distribuido)
+
+        # Porcentagem necessária de aproveitamento
+        if remaining_valor > 0 and required_points > 0:
+            required_performance = (required_points / remaining_valor) * 100
+            calculos['required_performance'] = round(required_performance, 2)
+        elif required_points <= 0:
+            # Já atingiu ou ultrapassou a média
+            calculos['required_performance'] = 0.0
+        else:
+            # Não há mais pontos a serem distribuídos e ainda não atingiu a média
+            calculos['required_performance'] = None
+
+        # Armazenar os valores adicionais para o template
+        calculos['required_points'] = round(required_points, 2)
+        calculos['remaining_valor'] = round(remaining_valor, 2)
+
+        # Adicionar logs para depuração
+        logging.debug(f"Disciplina: {disciplina}")
+        logging.debug(f"Sum Media: {sum_media}, Sum Notas: {sum_notas}")
+        logging.debug(f"Required Points: {required_points}, Remaining Valor: {remaining_valor}")
+        logging.debug(f"Required Performance: {calculos.get('required_performance')}%")
+
+    # Passar disciplinas_calculos para o template
+    return render_template('controle_notas.html', disciplinas_notas=disciplinas_ordenadas, disciplinas_calculos=disciplinas_calculos)
+
 @app.route('/logout')
 def logout():
     session_id = session.get('session_id')
@@ -1140,3 +1392,5 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+

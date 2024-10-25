@@ -37,7 +37,7 @@
                 <ul class="navbar-nav">
                     <li class="nav-item {% if request.endpoint == 'resultado' %}active{% endif %}">
                         <a class="nav-link" href="{{ url_for('resultado') }}">
-                            <i class="fas fa-chart-bar"></i> Controle de Faltas
+                            <i class="fas fa-chart-bar"></i> Faltas
                             {% if request.endpoint == 'resultado' %}
                             <span class="sr-only">(atual)</span>
                             {% endif %}
@@ -51,9 +51,19 @@
                             {% endif %}
                         </a>
                     </li>
+                    <!-- Novo Link para Controle de Notas -->
+                    <li class="nav-item {% if request.endpoint == 'controle_notas' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('controle_notas') }}">
+                            <i class="fas fa-book"></i> Notas
+                            {% if request.endpoint == 'controle_notas' %}
+                            <span class="sr-only">(atual)</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <!-- Link existente para Meu Progresso -->
                     <li class="nav-item {% if request.endpoint == 'analise_ia' %}active{% endif %}">
                         <a class="nav-link" href="{{ url_for('analise_ia') }}">
-                            <i class="fas fa-chart-bar"></i> Meu Progresso
+                            <i class="fas fa-chart-line"></i> Meu Progresso
                             {% if request.endpoint == 'analise_ia' %}
                             <span class="sr-only">(atual)</span>
                             {% endif %}
