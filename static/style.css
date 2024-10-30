@@ -27,6 +27,7 @@ html,
 body {
     height: 100%;
     margin: 0;
+    padding-top: 0 !important;
 }
 
 body {
@@ -38,7 +39,7 @@ body {
     background-size: cover;
     background-attachment: fixed;
     overflow-x: hidden;
-    padding-top: 70px;
+    padding-top: 0px;
     /* Espaço para a navbar fixa */
 }
 
@@ -47,13 +48,33 @@ body {
     transition: margin-top 0.3s ease;
     position: relative;
     z-index: 1;
+    padding: 1rem 1rem 0 1rem;
 }
 
 .footer {
-    flex-shrink: 0;
+    margin-top: auto;
     background-color: #f8f9fa;
     padding: 20px 0;
-    margin-top: auto;
+    width: calc(100% + 2rem);
+    /* Compensa o padding do content-wrapper */
+    margin-left: -1rem;
+    /* Compensa o padding do content-wrapper */
+    margin-bottom: -1rem;
+    /* Remove espaço extra inferior */
+    position: relative;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    /* Opcional: adiciona uma sombra sutil */
+}
+
+/* Se você quiser uma borda sutil antes do footer */
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 
@@ -263,9 +284,10 @@ h2 {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
+    width: 95%;
     padding-bottom: 20px;
-    /* Reduzido de 50px para dar espaço ao rodapé */
+    flex: 1 0 auto;
 }
 
 /* Adicione esta nova regra para o texto do rodapé */
@@ -888,6 +910,7 @@ textarea {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s, box-shadow 0.2s;
     /* Adicionado para o efeito de hover suave */
+    overflow: hidden;
 }
 
 .card-header-custom {
@@ -1381,6 +1404,7 @@ textarea {
     font-weight: bold;
     white-space: nowrap;
     margin-top: 10px;
+    white-space: normal;
 }
 
 /* Estilos específicos para cada faixa de aproveitamento */
@@ -1410,4 +1434,320 @@ textarea {
     /* Verde turquesa muito claro */
     color: #00695C;
     /* Verde turquesa escuro */
+}
+
+/* Estilos da Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    background-color: #00888A;
+    transition: width 0.3s;
+    overflow-x: hidden;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar.expanded {
+    width: 285px;
+}
+
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #ffffff;
+    text-decoration: none;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.sidebar.collapsed .sidebar-logo {
+    justify-content: center;
+}
+
+.nav-items {
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: #ffffff;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 0.75rem 0;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff !important;
+    text-decoration: none;
+}
+
+.nav-item.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #ffffff;
+}
+
+.nav-item i {
+    width: 24px;
+    text-align: center;
+}
+
+.sidebar.expanded .nav-item i {
+    margin-right: 1rem;
+}
+
+.nav-text {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.sidebar.collapsed .nav-text {
+    opacity: 0;
+    width: 0;
+    display: none;
+}
+
+.bottom-container {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar.collapsed .toggle-btn {
+    justify-content: center;
+    padding: 0.75rem 0;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.toggle-tooltip {
+    position: fixed;
+    left: 75px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.tooltip-visible {
+    opacity: 1;
+}
+
+.content-wrapper {
+    margin-left: 250px;
+    display: flex;
+    transition: margin-left 0.3s;
+    min-height: 100vh;
+    padding: 1rem 1rem 0 1rem;
+    flex-direction: column;
+}
+
+.content-wrapper.collapsed {
+    margin-left: 70px;
+}
+
+/* Ajustar apenas os estilos relevantes para o botão Sair */
+.logout-btn {
+    padding: 1rem;
+}
+
+.sidebar.collapsed .logout-btn {
+    padding: 0.75rem 0.5rem;
+    /* Adicionado padding horizontal */
+}
+
+.btn-sair {
+    width: 100%;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    justify-content: center;
+}
+
+.sidebar.collapsed .btn-sair {
+    margin: 0 0.5rem;
+    /* Adiciona margem horizontal quando colapsado */
+    width: calc(100% - 1rem);
+    /* Subtrai a margem total (0.5rem * 2) da largura */
+}
+
+.sidebar.expanded .btn-sair {
+    justify-content: flex-start;
+}
+
+.btn-sair:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .sidebar.expanded {
+        width: 100%;
+    }
+
+    .content-wrapper {
+        margin-left: 70px;
+    }
+
+    .content-wrapper.collapsed {
+        margin-left: 0;
+    }
+}
+
+/* Estilo para o botão Iniciar Simulação */
+.btn-iniciar {
+    background-color: #00b3b3;
+    /* Verde turquesa */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    /* Fonte menor */
+    padding: 10px 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.btn-iniciar:hover {
+    background-color: #009999;
+    transform: translateY(-2px);
+}
+
+.btn-iniciar i {
+    font-size: 1.1rem;
+    /* Tamanho do ícone */
+}
+
+.modal .btn-anterior {
+    background-color: #adb6b6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.modal .btn-anterior:hover {
+    background-color: #7b8585;
+}
+
+/* Estilos para os botões do modal */
+.modal .btn-proximo,
+.modal .btn-analisar {
+    background-color: #00b3b3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.modal .btn-proximo:hover,
+.modal .btn-analisar:hover {
+    background-color: #009999;
+}
+
+/* Estilo para títulos h4 dentro do modal */
+.modal h4 {
+    font-weight: 700 !important;
+    /* Negrito forçado */
+    color: #333333;
+    margin-bottom: 1rem;
+}
+
+/* Estilos para o modal em si */
+.modal-content {
+    padding: 20px;
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0, 179, 179, 0.2);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 179, 179, 0.2);
+}
+
+.modal-body {
+    max-height: 70vh;
+    /* Limita a altura do conteúdo do modal em 70% da altura da tela */
+    overflow-y: auto;
+    /* Adiciona o scroll vertical se o conteúdo exceder a altura */
 }

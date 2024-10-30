@@ -10,7 +10,7 @@ import time
 import uuid
 from collections import Counter, defaultdict
 from statistics import mode, multimode
-from request_ia import analyze_performance
+from request_ia import analyze_curriculo, analyze_performance, gerar_feedback, processar_analisar_curriculo_feluma
 
 from flask import (
     Flask, jsonify, redirect, render_template,
@@ -42,6 +42,7 @@ app.config['SESSION_FILE_DIR'] = tempfile.gettempdir()
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SECRET_KEY'] = '1234567890'
+app.config['JSON_AS_ASCII'] = False
 
 Session(app)
 
@@ -117,8 +118,8 @@ def login():
 def filtrar_disciplinas(faltas_ch_data):
     """
     Filtra as disciplinas que estão aprovadas, não possuem IMG igual a 'equivalente.gif',
-    e que estão em períodos menores ou iguais a 12.
-
+    e que possuem 'NOTA' diferente de 0.
+    
     :param faltas_ch_data: Lista de dicionários contendo os dados de APRESENTACAOHISTORICO.
     :return: Lista filtrada de disciplinas.
     """
@@ -127,6 +128,7 @@ def filtrar_disciplinas(faltas_ch_data):
         status = entry.get("STATUS", "").strip().upper()
         img = entry.get("IMG", "").strip().lower()
         periodo = entry.get("CODPERIODO", 0)
+        nota = entry.get("NOTA", 0)  # Obtém a nota, default para 0 se não existir
         
         # Tenta converter o período para inteiro, se possível
         try:
@@ -135,12 +137,21 @@ def filtrar_disciplinas(faltas_ch_data):
             # Se não for possível converter, assume que o período é inválido e desconsidera a entrada
             continue
         
-        # Aplica as condições de filtro
-        if status == "APROVADO" and img != "equivalente.gif" and periodo <= 12:
+        # Tenta converter a nota para float, se possível
+        try:
+            nota_float = float(str(nota).replace(',', '.'))
+        except (ValueError, TypeError):
+            # Se não for possível converter, assume que a nota é inválida e desconsidera a entrada
+            continue
+        
+        # Aplica as condições de filtro:
+        # 1. Status deve ser "APROVADO"
+        # 2. IMG não deve ser "equivalente.gif"
+        # 3. NOTA deve ser diferente de 0
+        if status == "APROVADO" and img != "equivalente.gif" and nota_float != 0:
             disciplinas_filtradas.append(entry)
     
     return disciplinas_filtradas
-
 
 def extrair_informacoes_aluno(shabilitacao_aluno):
     """
@@ -238,87 +249,153 @@ def calcular_media_global(disciplinas):
 
 def calcular_melhor_pior_periodo(disciplinas):
     """
-    Calcula o melhor e o pior período com base nas médias das notas.
+    Calcula o melhor e o pior período com base nas médias das notas,
+    considerando apenas disciplinas com CODPERIODO <= 12 e NOTA != 0.
 
     :param disciplinas: Lista de disciplinas filtradas.
     :return: Tupla contendo o melhor período e o pior período.
     """
     periodo_notas = defaultdict(list)
+    
     for disciplina in disciplinas:
         periodo = disciplina.get('CODPERIODO')
         nota = disciplina.get('NOTA')
-        if periodo is not None and nota not in [None, '']:
-            try:
-                nota_float = float(nota.replace(',', '.'))
-                periodo_notas[periodo].append(nota_float)
-            except ValueError:
-                continue  # Ignora notas inválidas
+        
+        # Verificar se CODPERIODO e NOTA são válidos
+        if periodo is None or nota in [None, '']:
+            continue  # Ignorar entradas inválidas
+        
+        try:
+            periodo_int = int(periodo)
+        except ValueError:
+            continue  # Ignorar CODPERIODO inválidos
+        
+        if periodo_int > 12:
+            continue  # Ignorar disciplinas com CODPERIODO > 12
+        
+        try:
+            nota_float = float(str(nota).replace(',', '.'))
+        except ValueError:
+            continue  # Ignorar NOTA inválidas
+        
+        if nota_float == 0:
+            continue  # Ignorar NOTA igual a 0
+        
+        periodo_notas[periodo_int].append(nota_float)
+    
     medias_periodo = {}
     for periodo, notas in periodo_notas.items():
         if notas:
             medias_periodo[periodo] = round(sum(notas) / len(notas), 2)
+    
     if not medias_periodo:
         return None, None
+    
     melhor_periodo = max(medias_periodo, key=medias_periodo.get)
     pior_periodo = min(medias_periodo, key=medias_periodo.get)
+    
     return melhor_periodo, pior_periodo
 
 def calcular_melhores_areas(disciplinas, top_n=5):
     """
-    Calcula as disciplinas com as melhores médias de notas.
+    Calcula as disciplinas com as melhores médias de notas,
+    considerando apenas disciplinas com CODPERIODO <= 12 e NOTA != 0.
 
     :param disciplinas: Lista de disciplinas filtradas.
     :param top_n: Número máximo de disciplinas a retornar.
     :return: Lista de tuplas (disciplina, média).
     """
     disciplina_notas = defaultdict(list)
+    
     for disciplina in disciplinas:
         nome = disciplina.get('DISCIPLINA')
         nota = disciplina.get('NOTA')
-        if nome and nota not in [None, '']:
-            try:
-                nota_float = float(nota.replace(',', '.'))
-                disciplina_notas[nome].append(nota_float)
-            except ValueError:
-                continue  # Ignora notas inválidas
+        periodo = disciplina.get('CODPERIODO')
+        
+        # Verificar se DISCIPLINA, CODPERIODO e NOTA são válidos
+        if not nome or nota in [None, ''] or periodo is None:
+            continue  # Ignorar entradas inválidas
+        
+        try:
+            periodo_int = int(periodo)
+        except ValueError:
+            continue  # Ignorar CODPERIODO inválidos
+        
+        if periodo_int > 12:
+            continue  # Ignorar disciplinas com CODPERIODO > 12
+        
+        try:
+            nota_float = float(str(nota).replace(',', '.'))
+        except ValueError:
+            continue  # Ignorar NOTA inválidas
+        
+        if nota_float == 0:
+            continue  # Ignorar NOTA igual a 0
+        
+        disciplina_notas[nome].append(nota_float)
+    
     medias_disciplina = {}
     for disciplina, notas in disciplina_notas.items():
         if notas:
             medias_disciplina[disciplina] = round(sum(notas) / len(notas), 2)
+    
     # Ordena as disciplinas pela média descendente
     melhores_areas = sorted(medias_disciplina.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    
     return melhores_areas
 
 def calcular_piores_areas(disciplinas, top_n=5):
     """
-    Calcula as disciplinas com as piores médias de notas.
+    Calcula as disciplinas com as piores médias de notas,
+    considerando apenas disciplinas com CODPERIODO <= 12 e NOTA != 0.
 
     :param disciplinas: Lista de disciplinas filtradas.
     :param top_n: Número máximo de disciplinas a retornar.
     :return: Lista de tuplas (disciplina, média).
     """
     disciplina_notas = defaultdict(list)
+    
     for disciplina in disciplinas:
         nome = disciplina.get('DISCIPLINA')
         nota = disciplina.get('NOTA')
-        if nome and nota not in [None, '']:
-            try:
-                nota_float = float(nota.replace(',', '.'))
-                disciplina_notas[nome].append(nota_float)
-            except ValueError:
-                continue  # Ignora notas inválidas
+        periodo = disciplina.get('CODPERIODO')
+        
+        # Verificar se DISCIPLINA, CODPERIODO e NOTA são válidos
+        if not nome or nota in [None, ''] or periodo is None:
+            continue  # Ignorar entradas inválidas
+        
+        try:
+            periodo_int = int(periodo)
+        except ValueError:
+            continue  # Ignorar CODPERIODO inválidos
+        
+        if periodo_int > 12:
+            continue  # Ignorar disciplinas com CODPERIODO > 12
+        
+        try:
+            nota_float = float(str(nota).replace(',', '.'))
+        except ValueError:
+            continue  # Ignorar NOTA inválidas
+        
+        if nota_float == 0:
+            continue  # Ignorar NOTA igual a 0
+        
+        disciplina_notas[nome].append(nota_float)
+    
     medias_disciplina = {}
     for disciplina, notas in disciplina_notas.items():
         if notas:
             medias_disciplina[disciplina] = round(sum(notas) / len(notas), 2)
+    
     # Ordena as disciplinas pela média ascendente (piores notas primeiro)
     piores_areas = sorted(medias_disciplina.items(), key=lambda x: x[1])[:top_n]
+    
     return piores_areas
 
 def calcular_metricas_por_periodo(disciplinas):
     """
-    Calcula, para cada período, a média das notas, a melhor e a pior nota,
-    além das top 3 melhores e piores disciplinas com suas respectivas notas.
+    Calcula, para cada período (CODPERIODO <= 12), a média das notas, a melhor e a pior nota,
+    além das top 10 melhores e top 3 piores disciplinas com suas respectivas notas.
 
     :param disciplinas: Lista de disciplinas filtradas.
     :return: Dicionário com as métricas por período.
@@ -331,13 +408,26 @@ def calcular_metricas_por_periodo(disciplinas):
         periodo = disciplina.get('CODPERIODO')
         nota = disciplina.get('NOTA')
         nome_disciplina = disciplina.get('DISCIPLINA')
-        if periodo is not None and nota not in [None, '']:
-            try:
-                nota_float = float(nota.replace(',', '.'))
-                periodo_notas[periodo].append(nota_float)
-                disciplina_por_periodo[periodo].append({'DISCIPLINA': nome_disciplina, 'NOTA': nota_float})
-            except ValueError:
-                continue  # Ignora notas inválidas
+
+        # Filtrar disciplinas com CODPERIODO <= 12
+        if periodo is None or nota in [None, '']:
+            continue  # Ignorar disciplinas sem período ou sem nota
+
+        try:
+            periodo_int = int(periodo)
+        except ValueError:
+            continue  # Ignorar CODPERIODO inválidos
+
+        if periodo_int > 12:
+            continue  # Ignorar disciplinas com CODPERIODO > 12
+
+        try:
+            nota_float = float(str(nota).replace(',', '.'))
+        except ValueError:
+            continue  # Ignora notas inválidas
+
+        periodo_notas[periodo_int].append(nota_float)
+        disciplina_por_periodo[periodo_int].append({'DISCIPLINA': nome_disciplina, 'NOTA': nota_float})
 
     metricas_por_periodo = {}
     for periodo, notas in periodo_notas.items():
@@ -346,7 +436,7 @@ def calcular_metricas_por_periodo(disciplinas):
             melhor_nota = max(notas)
             pior_nota = min(notas)
 
-            # Obter as top 3 melhores disciplinas
+            # Obter as top 10 melhores disciplinas
             disciplinas_periodo = disciplina_por_periodo[periodo]
             top_melhores = sorted(disciplinas_periodo, key=lambda x: x['NOTA'], reverse=True)[:10]
             top_piores = sorted(disciplinas_periodo, key=lambda x: x['NOTA'])[:3]
@@ -371,16 +461,33 @@ def calcular_metricas_por_periodo(disciplinas):
 def calcular_data_pode_faltar(aulas_restantes, faltas_permitidas, schedule_data, cod_disc, dias_info):
     hoje = datetime.date.today()
     
+    logging.debug(f"\n=== INÍCIO DEBUG DATA PODE FALTAR ===")
+    logging.debug(f"Aulas restantes: {aulas_restantes}")
+    logging.debug(f"Faltas permitidas: {faltas_permitidas}")
+    logging.debug(f"Código disciplina: {cod_disc}")
+    logging.debug(f"Dias info: {dias_info}")
+    
     # Filtra e ordena as aulas válidas futuras
     aulas_validas = [
         aula for aula in schedule_data 
         if aula.get('CODDISC') == cod_disc and aula.get('DATAINICIAL')
     ]
+    
+    logging.debug(f"Total de aulas válidas encontradas: {len(aulas_validas)}")
+    
     aulas_futuras = [
         aula for aula in aulas_validas
         if datetime.datetime.strptime(aula['DATAINICIAL'].split('T')[0], "%Y-%m-%d").date() >= hoje
     ]
+    
+    logging.debug(f"Total de aulas futuras: {len(aulas_futuras)}")
+    
     aulas_ordenadas = sorted(aulas_futuras, key=lambda x: x['DATAINICIAL'])
+    
+    for aula in aulas_ordenadas[:5]:  # Mostra as primeiras 5 aulas para debug
+        logging.debug(f"Aula futura: {aula['DATAINICIAL']}")
+    
+    logging.debug("=== FIM DEBUG DATA PODE FALTAR ===\n")
     
     if not aulas_ordenadas:
         return "Não há aulas futuras programadas"
@@ -455,53 +562,6 @@ def calcular_aulas_restantes(schedule_data, cod_disc):
                 except ValueError:
                     continue  # Ignora datas inválidas
     return total_restante
-
-def calcular_dias_restantes(subjects_days_dates, cod_disc):
-    hoje = datetime.date.today()
-    dias_restantes = defaultdict(int)  # chave: "dia_semana" ou "dia_semana_pratica"
-    dias_datas = subjects_days_dates.get(cod_disc, {})
-    
-    for dia_semana, datas in dias_datas.items():
-        aulas_por_data = defaultdict(int)
-        for data_str, num_aulas in datas.items():
-            try:
-                data_aula = datetime.datetime.strptime(data_str, "%Y-%m-%d").date()
-                if data_aula >= hoje:
-                    aulas_por_data[data_str] = num_aulas
-            except ValueError:
-                continue
-
-        if not aulas_por_data:
-            continue
-
-        # Analisa o padrão de aulas para este dia da semana
-        contagens = list(aulas_por_data.values())
-        if not contagens:
-            continue
-
-        counter = Counter(contagens)
-        sorted_counts = sorted(counter.items(), key=lambda x: (x[1], -x[0]), reverse=True)
-        
-        # Se só tem um tipo de aula neste dia
-        if len(sorted_counts) == 1:
-            dias_restantes[f"{dia_semana}"] = len(aulas_por_data)
-            continue
-
-        # Se tem dois padrões diferentes (regular e prática)
-        aula_regular = min(sorted_counts[0][0], sorted_counts[1][0])
-        aula_pratica = max(sorted_counts[0][0], sorted_counts[1][0])
-
-        # Conta dias restantes para cada tipo
-        dias_regulares = sum(1 for num_aulas in aulas_por_data.values() if num_aulas == aula_regular)
-        dias_pratica = sum(1 for num_aulas in aulas_por_data.values() if num_aulas == aula_pratica)
-
-        # Armazena separadamente dias regulares e com prática
-        if dias_regulares > 0:
-            dias_restantes[f"{dia_semana}"] = dias_regulares
-        if dias_pratica > 0:
-            dias_restantes[f"{dia_semana}_pratica"] = dias_pratica
-
-    return dias_restantes
 
 # Função para atualizar o progresso
 def update_progress(session_id, phase, description, percentage):
@@ -662,39 +722,106 @@ def process_login_thread(username, password, session_id):
 
             # Função para analisar o padrão de aulas
             def analyze_class_pattern(aulas_por_data):
+                """
+                Analisa o padrão de aulas para determinar quais são regulares e práticas.
+                """
                 contagens = list(aulas_por_data.values())
-                if len(contagens) < 4:  # Precisamos de pelo menos 4 semanas de dados para determinar
-                    return {"regular": max(set(contagens), key=contagens.count), "practical": 0}
+                if not contagens:
+                    return {"regular": 0, "practical": 0}
 
                 counter = Counter(contagens)
-                sorted_counts = sorted(counter.items(), key=lambda x: (x[1], -x[0]), reverse=True)
+                sorted_counts = sorted(counter.items(), key=lambda x: (x[1], x[0]), reverse=True)
+                
+                logging.debug(f"Contagens encontradas: {sorted_counts}")
 
-                if len(sorted_counts) == 1:
-                    return {"regular": sorted_counts[0][0], "practical": 0}
+                # Se temos mais de um padrão
+                if len(sorted_counts) > 1:
+                    # Ordenar por número de aulas para comparar
+                    patterns_by_hours = sorted(counter.items(), key=lambda x: x[0])
+                    menor_padrao = patterns_by_hours[0][0]
+                    maior_padrao = patterns_by_hours[-1][0]
+                    
+                    # Se a diferença entre o maior e menor é significativa
+                    if maior_padrao - menor_padrao >= 2:
+                        # Verificar se o padrão maior é frequente o suficiente
+                        freq_maior = counter[maior_padrao] / len(contagens)
+                        if freq_maior >= 0.2:  # Pelo menos 20% das aulas
+                            # Encontrar o padrão regular (o menor com frequência significativa)
+                            for padrao, contagem in patterns_by_hours:
+                                if contagem/len(contagens) >= 0.2:
+                                    menor_significativo = padrao
+                                    break
+                            else:
+                                menor_significativo = menor_padrao
 
-                # Identificar os dois padrões mais frequentes
-                first_frequent = sorted_counts[0][0]
-                second_frequent = sorted_counts[1][0] if len(sorted_counts) > 1 else 0
+                            return {"regular": menor_significativo, "practical": maior_padrao}
 
-                # Calcular as frequências relativas
-                freq_first = counter[first_frequent] / len(contagens)
-                freq_second = counter[second_frequent] / len(contagens)
+                # Caso padrão: usar o mais frequente como regular
+                return {"regular": sorted_counts[0][0], "practical": 0}
+            
+            def calcular_dias_restantes(subjects_days_dates, cod_disc):
+                """
+                Calcula os dias restantes de aula para uma disciplina.
+                """
+                hoje = datetime.date.today()
+                dias_restantes = defaultdict(int)
+                dias_datas = subjects_days_dates.get(cod_disc, {})
+                
+                logging.debug(f"\n=== INÍCIO DEBUG DIAS RESTANTES ===")
+                logging.debug(f"Código da disciplina: {cod_disc}")
+                
+                for dia_semana, datas in dias_datas.items():
+                    aulas_por_data = defaultdict(int)
+                    for data_str, num_aulas in datas.items():
+                        try:
+                            data_aula = datetime.datetime.strptime(data_str, "%Y-%m-%d").date()
+                            if data_aula >= hoje:
+                                aulas_por_data[data_str] = num_aulas
+                                logging.debug(f"Data futura encontrada: {data_str} com {num_aulas} aulas")
+                        except ValueError:
+                            continue
 
-                # Caso especial: aulas práticas quinzenais ou mensais
-                if freq_first <= 0.6 and counter[0] / len(contagens) > 0.3:
-                    return {"regular": 0, "practical": max(contagens)}
+                    if not aulas_por_data:
+                        logging.debug(f"Nenhuma aula futura para o dia {dia_semana}")
+                        continue
 
-                # Caso com aulas regulares e práticas
-                if first_frequent != second_frequent and freq_first + freq_second > 0.8:
-                    # Verifica se o segundo padrão é frequente o suficiente para ser considerado prática
-                    if freq_second > 0.2:
-                        return {
-                            "regular": min(first_frequent, second_frequent),
-                            "practical": max(first_frequent, second_frequent)
-                        }
+                    # Analisa o padrão de aulas
+                    padrao = analyze_class_pattern(aulas_por_data)
+                    logging.debug(f"Dia {dia_semana}: Padrão analisado = {padrao}")
 
-                # Caso padrão: apenas aulas regulares
-                return {"regular": first_frequent, "practical": 0}
+                    # Se existe padrão prático
+                    if padrao["practical"] > 0:
+                        padrao_pratico = padrao["practical"]
+                        padrao_regular = padrao["regular"]
+
+                        # Se não há padrão regular definido, todas são práticas
+                        if padrao_regular == 0:
+                            dias_pratica = len(aulas_por_data)
+                            dias_restantes[f"{dia_semana}_pratica"] = dias_pratica
+                            logging.debug(f"Dia {dia_semana}: {dias_pratica} dias práticos (todas práticas)")
+                        else:
+                            # Classificar aulas como regulares ou práticas
+                            meio_termo = (padrao_regular + padrao_pratico) / 2
+                            dias_regulares = sum(1 for num_aulas in aulas_por_data.values() 
+                                            if num_aulas < meio_termo)
+                            dias_pratica = sum(1 for num_aulas in aulas_por_data.values() 
+                                            if num_aulas >= meio_termo)
+
+                            if dias_regulares > 0:
+                                dias_restantes[f"{dia_semana}"] = dias_regulares
+                                logging.debug(f"Dia {dia_semana}: {dias_regulares} dias regulares")
+                            if dias_pratica > 0:
+                                dias_restantes[f"{dia_semana}_pratica"] = dias_pratica
+                                logging.debug(f"Dia {dia_semana}: {dias_pratica} dias práticos")
+                    else:
+                        # Se não tem prática, todas são regulares
+                        dias_restantes[f"{dia_semana}"] = len(aulas_por_data)
+                        logging.debug(f"Dia {dia_semana}: {len(aulas_por_data)} dias regulares")
+
+                logging.debug(f"Resultado final dias_restantes: {dict(dias_restantes)}")
+                logging.debug("=== FIM DEBUG DIAS RESTANTES ===\n")
+                
+                return dias_restantes
 
             # Dicionário para armazenar o valor de moda de aulas por matéria e dia da semana
             subjects_mode_per_day = defaultdict(lambda: defaultdict(dict))
@@ -774,6 +901,7 @@ def process_login_thread(username, password, session_id):
 
                 # Calcular dias restantes
                 dias_restantes = calcular_dias_restantes(subjects_days_dates, cod_disc)
+                logging.debug(dias_restantes)
 
                 dias_info = []
                 for aula in aulas_list:
@@ -893,6 +1021,8 @@ def process_login_thread(username, password, session_id):
                 'metricas_por_periodo': metricas_por_periodo,
                 'disciplinas_ordenadas': disciplinas_ordenadas
             }
+
+            logging.debug(resultados_metrica)
 
             # Processar data_avaliacao
             try:
@@ -1381,6 +1511,218 @@ def controle_notas():
     # Passar disciplinas_calculos para o template
     return render_template('controle_notas.html', disciplinas_notas=disciplinas_ordenadas, disciplinas_calculos=disciplinas_calculos)
 
+# Nova rota para a página de simulação de currículo
+@app.route('/simulador_residencia')
+def simulador_residencia():
+    session_id = session.get('session_id')
+    logging.debug(f"/simulador_residencia: session_id = {session_id}")
+    
+    if not session_id:
+        flash("Erro: Sessão inválida. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+        
+    with results_lock:
+        data = RESULTS.get(session_id)
+        
+    if not data:
+        flash("Erro: Dados não encontrados. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+    
+    return render_template('simulador_residencia.html')
+
+# Nova rota para processar a análise do currículo
+@app.route('/analisar_curriculo', methods=['POST'])
+def analisar_curriculo():
+    session_id = session.get('session_id')
+    logging.debug(f"/analisar_curriculo: Iniciando análise para session_id = {session_id}")
+    
+    if not session_id:
+        return jsonify({'error': 'Sessão inválida'}), 400
+
+    try:
+        # Obter dados da sessão (histórico e info do aluno)
+        with results_lock:
+            session_data = RESULTS.get(session_id)
+            if not session_data:
+                return jsonify({'error': 'Dados da sessão não encontrados'}), 400
+            
+            metrica = session_data.get('metrica', {}).get('disciplinas_ordenadas', 0)
+            info_aluno = session_data.get('info_aluno')
+
+        # Obter dados do formulário
+        form_data = request.json
+        logging.debug(f"Dados do formulário recebidos: {form_data}")
+
+        # Chamar a função de análise com todos os parâmetros
+        resultado = analyze_curriculo(
+            metrica=metrica,
+            info_aluno=info_aluno,
+            extensao=int(form_data.get('extensao', 0)),
+            eventos_sus=int(form_data.get('eventos_sus', 0)),
+            cursos_aperfeicoamento=int(form_data.get('cursos_aperfeicoamento', 0)),
+            monitoria=int(form_data.get('monitoria', 0)),
+            pesquisa_ic=int(form_data.get('pesquisa_ic', 0)),
+            eventos_regionais=int(form_data.get('eventos_regionais', 0)),
+            eventos_nacionais=int(form_data.get('eventos_nacionais', 0)),
+            artigos_nao_indexados=int(form_data.get('artigos_nao_indexados', 0)),
+            artigos_doi=int(form_data.get('artigos_doi', 0)),
+            congressos=int(form_data.get('congressos', 0)),
+            representacao_estudantil=int(form_data.get('representacao_estudantil', 0)),
+            ligas_academicas=int(form_data.get('ligas_academicas', 0)),
+            lingua_estrangeira=int(form_data.get('lingua_estrangeira', 0)),
+            pet_saude=int(form_data.get('pet_saude', 0)),
+            estagio_nao_obrigatorio=int(form_data.get('estagio_nao_obrigatorio', 0))
+        )
+
+        # Limpar e sanitizar as strings no resultado
+        if isinstance(resultado, dict):
+            # Limpar feedback geral
+            if 'feedback_geral' in resultado:
+                resultado['feedback_geral'] = resultado['feedback_geral'].replace('\n', ' ').strip()
+            
+            # Limpar componentes
+            if 'componentes' in resultado and isinstance(resultado['componentes'], list):
+                for componente in resultado['componentes']:
+                    if 'feedback' in componente:
+                        componente['feedback'] = componente['feedback'].replace('\n', ' ').strip()
+                    if 'nome' in componente:
+                        componente['nome'] = componente['nome'].replace('\n', ' ').strip()
+
+        logging.debug(f"Análise concluída com sucesso: {resultado}")
+        return jsonify(resultado)
+
+    except ValueError as ve:
+        # Erros relacionados à validação do JSON
+        logging.error(f"Erro na validação do JSON: {str(ve)}", exc_info=True)
+        return jsonify({
+            'error': True,
+            'message': f'Ocorreu um erro ao analisar o currículo: {str(ve)}'
+        }), 400
+
+    except Exception as e:
+        logging.error(f"Erro ao analisar currículo: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': True,
+            'message': f'Ocorreu um erro ao processar a análise do currículo: {str(e)}'
+        }), 500
+
+@app.route('/simulador_feluma')
+def simulador_feluma():
+    session_id = session.get('session_id')
+    logging.debug(f"/simulador_feluma: session_id = {session_id}")
+    
+    if not session_id:
+        flash("Erro: Sessão inválida. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+        
+    with results_lock:
+        data = RESULTS.get(session_id)
+        
+    if not data:
+        flash("Erro: Dados não encontrados. Por favor, faça login novamente.", "error")
+        return redirect(url_for('login'))
+    
+    return render_template('simulador_feluma.html')
+
+@app.route('/analisar_curriculo_feluma', methods=['POST'])
+def analisar_curriculo_feluma_route():
+    session_id = session.get('session_id')
+    logging.debug(f"/analisar_curriculo_feluma: Iniciando análise para session_id = {session_id}")
+    
+    if not session_id:
+        return jsonify({'error': 'Sessão inválida'}), 400
+
+    try:
+        # Obter dados da sessão (histórico e info do aluno)
+        with results_lock:
+            session_data = RESULTS.get(session_id)
+            if not session_data:
+                return jsonify({'error': 'Dados da sessão não encontrados'}), 400
+            
+            # Obter a média do aluno das métricas
+            media_curricular = session_data.get('metrica', {}).get('media_global', 0)
+            info_aluno = session_data.get('info_aluno')
+
+        # Obter dados do formulário
+        form_data = request.json
+        logging.debug(f"Dados do formulário recebidos: {form_data}")
+
+        # Extrair todos os parâmetros necessários com valores padrão
+        parametros = {
+            'media_curricular': media_curricular,
+            'projeto_pesquisa': form_data.get('projeto_pesquisa', False),
+            'projeto_extensao': form_data.get('projeto_extensao', False),
+            'estagio_nao_obrigatorio': form_data.get('estagio_nao_obrigatorio', False),
+            'monitoria_pid': form_data.get('monitoria_pid', False),
+            'diretoria_liga': form_data.get('diretoria_liga', False),
+            'membro_liga': form_data.get('membro_liga', False),
+            'projeto_comunidade': form_data.get('projeto_comunidade', False),
+            'doutorado_mestrado': form_data.get('doutorado_mestrado', False),
+            'residencia_pos_hospitalar': form_data.get('residencia_pos_hospitalar', False),
+            'primeira_especializacao': form_data.get('primeira_especializacao', False),
+            'segunda_especializacao': form_data.get('segunda_especializacao', False),
+            'curso_acls': form_data.get('curso_acls', False),
+            'curso_pals': form_data.get('curso_pals', False),
+            'curso_atls': form_data.get('curso_atls', False),
+            'curso_also': form_data.get('curso_also', False),
+            'curso_phtls': form_data.get('curso_phtls', False),
+            'curso_bls': form_data.get('curso_bls', False),
+            'primeira_publicacao_artigo': form_data.get('primeira_publicacao_artigo', False),
+            'segunda_publicacao_artigo': form_data.get('segunda_publicacao_artigo', False),
+            'primeiro_capitulo_livro': form_data.get('primeiro_capitulo_livro', False),
+            'segundo_capitulo_livro': form_data.get('segundo_capitulo_livro', False),
+            'primeira_organizacao_livro': form_data.get('primeira_organizacao_livro', False),
+            'segunda_organizacao_livro': form_data.get('segunda_organizacao_livro', False),
+            'primeira_comissao_organizadora': form_data.get('primeira_comissao_organizadora', False),
+            'segunda_comissao_organizadora': form_data.get('segunda_comissao_organizadora', False),
+            'primeira_premiacao': form_data.get('primeira_premiacao', False),
+            'segunda_premiacao': form_data.get('segunda_premiacao', False),
+            'primeira_palestra': form_data.get('primeira_palestra', False),
+            'segunda_palestra': form_data.get('segunda_palestra', False),
+            'apresentacao_trabalho': form_data.get('apresentacao_trabalho', False),
+            'proficiencia_ingles': form_data.get('proficiencia_ingles', False),
+            'proficiencia_outra_lingua': form_data.get('proficiencia_outra_lingua', False),
+            'proficiencia_portugues': form_data.get('proficiencia_portugues', False)
+        }
+
+        # Calcular as pontuações
+        resultado_calculado = processar_analisar_curriculo_feluma(**parametros)
+        
+        # Gerar feedbacks utilizando a IA existente
+        resultado_com_feedback = gerar_feedback(resultado_calculado)
+
+        # Garantir que a pontuação total não exceda 10
+        resultado_com_feedback['valor_curriculo'] = min(resultado_com_feedback['valor_curriculo'], 10.0)
+
+        # Limpar e sanitizar as strings no resultado
+        if isinstance(resultado_com_feedback, dict):
+            if 'feedback_geral' in resultado_com_feedback:
+                resultado_com_feedback['feedback_geral'] = resultado_com_feedback['feedback_geral'].replace('\n', ' ').strip()
+            
+            if 'grupos' in resultado_com_feedback and isinstance(resultado_com_feedback['grupos'], list):
+                for grupo in resultado_com_feedback['grupos']:
+                    if 'feedback' in grupo:
+                        grupo['feedback'] = grupo['feedback'].replace('\n', ' ').strip()
+                    if 'nome' in grupo:
+                        grupo['nome'] = grupo['nome'].replace('\n', ' ').strip()
+
+        logging.debug(f"Análise concluída com sucesso: {resultado_com_feedback}")
+        return jsonify(resultado_com_feedback)
+
+    except ValueError as ve:
+        logging.error(f"Erro na validação dos dados: {str(ve)}", exc_info=True)
+        return jsonify({
+            'error': True,
+            'message': f'Ocorreu um erro ao analisar o currículo: {str(ve)}'
+        }), 400
+
+    except Exception as e:
+        logging.error(f"Erro ao analisar currículo: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': True,
+            'message': f'Ocorreu um erro ao processar a análise do currículo: {str(e)}'
+        }), 500    
+
 @app.route('/logout')
 def logout():
     session_id = session.get('session_id')
@@ -1392,5 +1734,3 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-

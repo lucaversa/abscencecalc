@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Currículo - Residência FELUMA</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .resultado-card svg {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .progress-ring {
+            transform-origin: center;
+            transform: rotate(-90deg);
+            stroke-linecap: round;
+        }
+
+        .percentage-text {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .form-divider {
+            border-top: 1px solid #e0e0e0;
+            /* Cor leve para a linha */
+            margin: 15px 0;
+            /* Espaçamento acima e abaixo da linha */
+        }
+
+        /* Apenas novos estilos para grupos e componentes */
+        .grupo-title {
+            border-left: 4px solid #00b3b3;
+            padding-left: 15px;
+            margin: 30px 0 20px;
+            color: #2c3e50;
+        }
+
+        .grupo-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .grupo-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .grupo-progress {
+            height: 8px !important;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            margin: 10px 0;
+        }
+
+        .grupo-max-points {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-left: 10px;
+        }
+
+        .modal-step-title {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00b3b3;
+        }
+
+        .info-tooltip {
+            color: #00b3b3;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .card-text {
+            border-bottom: 2.25px solid #00b3b3;
+            padding-bottom: 15px;
+            /* Espaço entre o conteúdo e a linha */
+        }
+
+        .componente-item {
+            border-bottom: 1.5px solid #dfe7e7;
+            padding-bottom: 10px;
+            /* Espaço entre o conteúdo e a linha */
+            margin-bottom: 15px;
+            /* Espaço entre a linha e o próximo item */
+        }
+
+        .componente-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            /* Remove a margem do último item */
+            padding-bottom: 0;
+            /* Remove o padding do último item */
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <nav class="sidebar expanded">
+        <div class="sidebar-header">
+            <a href="#" class="sidebar-logo">
+                <i class="fas fa-frog"></i>
+                <span class="nav-text">MyCMMG</span>
+            </a>
+        </div>
+
+        <div class="nav-items">
+            <a href="{{ url_for('resultado') }}"
+                class="nav-item {% if request.endpoint == 'resultado' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                <span class="nav-text">Faltas</span>
+            </a>
+            <a href="{{ url_for('controle_notas') }}"
+                class="nav-item {% if request.endpoint == 'controle_notas' %}active{% endif %}">
+                <i class="fas fa-book"></i>
+                <span class="nav-text">Notas</span>
+            </a>
+            <a href="{{ url_for('analise_ia') }}"
+                class="nav-item {% if request.endpoint == 'analise_ia' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                <span class="nav-text">Meu Progresso</span>
+            </a>
+            <a href="{{ url_for('simulador') }}"
+                class="nav-item {% if request.endpoint == 'simulador' %}active{% endif %}">
+                <i class="fas fa-calculator"></i>
+                <span class="nav-text">Simulador de Falta</span>
+            </a>
+            <a href="{{ url_for('simulador_residencia') }}"
+                class="nav-item {% if request.endpoint == 'simulador_residencia' %}active{% endif %}">
+                <i class="fas fa-layer-group"></i>
+                <span class="nav-text">Simulador ENARE</span>
+            </a>
+            <a href="{{ url_for('simulador_feluma') }}"
+                class="nav-item {% if request.endpoint == 'simulador_feluma' %}active{% endif %}">
+                <i class="fas fa-layer-group"></i>
+                <span class="nav-text">Simulador FELUMA</span>
+            </a>
+        </div>
+
+        <div class="bottom-container">
+            <div class="logout-btn">
+                <a href="{{ url_for('logout') }}" class="btn-sair" data-tooltip="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="nav-text">Sair</span>
+                </a>
+            </div>
+
+            <button class="toggle-btn" data-tooltip="Expandir menu">
+                <i class="fas fa-chevron-left"></i>
+                <span class="nav-text">Recolher menu</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="content-wrapper">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="container mt-4">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="container mt-5">
+            <!-- Card Principal -->
+            <div class="resultado-card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        Simulador FELUMA
+                    </h2>
+
+                    <div class="alert alert-info" role="alert">
+                        <p>Este simulador analisa a pontuação do seu currículo de acordo com os componentes do edital da
+                            FELUMA 2024 e inteligência artificial.</p>
+                        <hr>
+                        <p class="mb-0">A análise é feita considerando 7 grupos de avaliação, com pontuação máxima total
+                            de 10 pontos:</p>
+                        <ul class="mt-2 mb-0">
+                            <li>Aproveitamento Curricular (2,0 pontos) - Calculado automaticamente</li>
+                            <li>Aproveitamento Extracurricular (2,0 pontos)</li>
+                            <li>Pós-graduação (1,0 ponto)</li>
+                            <li>Suporte à Vida (1,0 ponto)</li>
+                            <li>Publicações Científicas (2,0 pontos)</li>
+                            <li>Eventos e Premiações (1,0 ponto)</li>
+                            <li>Proficiência em Línguas (1,0 ponto)</li>
+                        </ul>
+                        <hr>
+                        Lembre-se: este simulador é apenas uma estimativa e pode não refletir os valores verdadeiros,
+                        que dependem de uma análise curricular específica pela banca responsável.
+                    </div>
+
+                    <button id="iniciarSimulacao" class="btn-iniciar">
+                        <i class="fas fa-file-alt"></i>
+                        Iniciar Simulação
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card de Resultados -->
+            <div id="resultadoAnalise" class="mb-4" style="display: none;">
+                <div id="cardPrincipal"></div>
+                <div id="gruposAnalise"></div>
+            </div>
+        </div>
+
+
+        <footer class="footer mt-auto py-3 bg-light">
+            <div class="container text-center">
+                <span class="text-muted">
+                    MyCMMG (2024), todos os direitos reservados.
+                    <a href="https://wa.me/5535997030903" target="_blank" rel="noopener noreferrer" class="ml-2">
+                        <i class="fas fa-external-link-alt"></i> WhatsApp
+                    </a>
+                </span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Multi-etapas -->
+    <div class="modal fade" id="simulacaoModal" tabindex="-1" role="dialog" aria-labelledby="simulacaoModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Simulação de Currículo FELUMA</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Indicador de etapas -->
+                    <div class="progress mb-4">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 25%;"
+                            aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">1/4</div>
+                    </div>
+
+                    <!-- Formulário -->
+                    <form id="simulacaoForm">
+                        <!-- Grupo 1 - Aproveitamento Extracurricular -->
+                        <div class="step" data-step="1">
+                            <h4 class="modal-step-title">
+                                Aproveitamento Extracurricular
+                                <small class="grupo-max-points">(Máx: 2,0 pontos)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="projeto_pesquisa"
+                                        name="projeto_pesquisa">
+                                    <label class="custom-control-label" for="projeto_pesquisa">
+                                        Participação em projeto de pesquisa
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 6 meses"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="projeto_extensao"
+                                        name="projeto_extensao">
+                                    <label class="custom-control-label" for="projeto_extensao">
+                                        Participação em projeto de extensão
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Carga horária mínima de 80 horas"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="estagio_nao_obrigatorio"
+                                        name="estagio_nao_obrigatorio">
+                                    <label class="custom-control-label" for="estagio_nao_obrigatorio">
+                                        Estágio não obrigatório
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 4 meses"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="monitoria_pid"
+                                        name="monitoria_pid">
+                                    <label class="custom-control-label" for="monitoria_pid">
+                                        Monitoria ou Programa de Iniciação à Docência (PID)
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 3 meses"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="diretoria_liga"
+                                        name="diretoria_liga">
+                                    <label class="custom-control-label" for="diretoria_liga">
+                                        Participação em diretorias de ligas acadêmicas
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 12 meses"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="membro_liga"
+                                        name="membro_liga">
+                                    <label class="custom-control-label" for="membro_liga">
+                                        Participação como membro/ligante em ligas acadêmicas
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 12 meses"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="projeto_comunidade"
+                                        name="projeto_comunidade">
+                                    <label class="custom-control-label" for="projeto_comunidade">
+                                        Participação voluntária em projeto junto à comunidade
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Duração mínima de 8 horas"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grupo 2 - Pós-graduação -->
+                        <div class="step" data-step="2" style="display: none;">
+                            <h4 class="modal-step-title">
+                                Pós-graduação e Formação Complementar
+                                <small class="grupo-max-points">(Máx: 1,0 ponto)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="doutorado_mestrado"
+                                        name="doutorado_mestrado">
+                                    <label class="custom-control-label" for="doutorado_mestrado">
+                                        Doutorado / Mestrado
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Concluído"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="residencia_pos_hospitalar"
+                                        name="residencia_pos_hospitalar">
+                                    <label class="custom-control-label" for="residencia_pos_hospitalar">
+                                        Residência Médica ou Pós-Graduação Lato Sensu Hospitalar
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Concluída"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeira_especializacao"
+                                        name="primeira_especializacao">
+                                    <label class="custom-control-label" for="primeira_especializacao">
+                                        Primeiro Curso de Especialização Lato Sensu na área da saúde
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Carga horária mínima 360 horas"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segunda_especializacao"
+                                        name="segunda_especializacao">
+                                    <label class="custom-control-label" for="segunda_especializacao">
+                                        Segundo Curso de Especialização Lato Sensu na área da saúde
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Carga horária mínima 360 horas"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grupo 3 - Suporte à Vida -->
+                        <div class="step" data-step="3" style="display: none;">
+                            <h4 class="modal-step-title">
+                                Cursos de Suporte à Vida
+                                <small class="grupo-max-points">(Máx: 1,0 ponto)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_acls"
+                                        name="curso_acls">
+                                    <label class="custom-control-label" for="curso_acls">
+                                        Advanced Cardiac Life Support - ACLS
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_pals"
+                                        name="curso_pals">
+                                    <label class="custom-control-label" for="curso_pals">
+                                        Pediatric Advanced Life Support - PALS
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_atls"
+                                        name="curso_atls">
+                                    <label class="custom-control-label" for="curso_atls">
+                                        Advanced Trauma Life Support - ATLS
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_also"
+                                        name="curso_also">
+                                    <label class="custom-control-label" for="curso_also">
+                                        Advanced Life Support in Obstetrics - ALSO
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_phtls"
+                                        name="curso_phtls">
+                                    <label class="custom-control-label" for="curso_phtls">
+                                        Pre Hospital Trauma Life Support - PHTLS
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="curso_bls" name="curso_bls">
+                                    <label class="custom-control-label" for="curso_bls">
+                                        Basic Life Support - BLS
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grupo 4 - Publicação Científica -->
+                        <div class="step" data-step="4" style="display: none;">
+                            <h4 class="modal-step-title">
+                                Publicação de Trabalhos Científicos
+                                <small class="grupo-max-points">(Máx: 2,0 pontos)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeira_publicacao_artigo"
+                                        name="primeira_publicacao_artigo">
+                                    <label class="custom-control-label" for="primeira_publicacao_artigo">
+                                        Primeira publicação como autor/coautor de artigos científicos em revistas
+                                        indexadas
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Com registro DOI e ISSN"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segunda_publicacao_artigo"
+                                        name="segunda_publicacao_artigo">
+                                    <label class="custom-control-label" for="segunda_publicacao_artigo">
+                                        Segunda publicação como autor/coautor de artigos científicos em revistas
+                                        indexadas
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Com registro DOI e ISSN"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeiro_capitulo_livro"
+                                        name="primeiro_capitulo_livro">
+                                    <label class="custom-control-label" for="primeiro_capitulo_livro">
+                                        Primeira publicação como autor/coautor de capítulos de livros
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segundo_capitulo_livro"
+                                        name="segundo_capitulo_livro">
+                                    <label class="custom-control-label" for="segundo_capitulo_livro">
+                                        Segunda publicação como autor/coautor de capítulos de livros
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeira_organizacao_livro"
+                                        name="primeira_organizacao_livro">
+                                    <label class="custom-control-label" for="primeira_organizacao_livro">
+                                        Primeira Organização de livros
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segunda_organizacao_livro"
+                                        name="segunda_organizacao_livro">
+                                    <label class="custom-control-label" for="segunda_organizacao_livro">
+                                        Segunda Organização de livros
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grupo 5 - Eventos e Premiações -->
+                        <div class="step" data-step="5" style="display: none;">
+                            <h4 class="modal-step-title">
+                                Eventos Científicos e Premiações
+                                <small class="grupo-max-points">(Máx: 1,0 ponto)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input"
+                                        id="primeira_comissao_organizadora" name="primeira_comissao_organizadora">
+                                    <label class="custom-control-label" for="primeira_comissao_organizadora">
+                                        Primeira Participação em evento científico na Comissão Organizadora
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Regional, nacional ou internacional"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input"
+                                        id="segunda_comissao_organizadora" name="segunda_comissao_organizadora">
+                                    <label class="custom-control-label" for="segunda_comissao_organizadora">
+                                        Segunda Participação em evento científico na Comissão Organizadora
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Regional, nacional ou internacional"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeira_premiacao"
+                                        name="primeira_premiacao">
+                                    <label class="custom-control-label" for="primeira_premiacao">
+                                        Primeira Premiação de trabalhos, TCC, dissertação ou tese
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segunda_premiacao"
+                                        name="segunda_premiacao">
+                                    <label class="custom-control-label" for="segunda_premiacao">
+                                        Segunda Premiação de trabalhos, TCC, dissertação ou tese
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="primeira_palestra"
+                                        name="primeira_palestra">
+                                    <label class="custom-control-label" for="primeira_palestra">
+                                        Primeira Participação em evento científico como palestrante
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Regional, nacional ou internacional"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="segunda_palestra"
+                                        name="segunda_palestra">
+                                    <label class="custom-control-label" for="segunda_palestra">
+                                        Segunda Participação em evento científico como palestrante
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Regional, nacional ou internacional"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="apresentacao_trabalho"
+                                        name="apresentacao_trabalho">
+                                    <label class="custom-control-label" for="apresentacao_trabalho">
+                                        Apresentação de trabalho em evento científico
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Modalidade oral, tema livre ou pôster"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grupo 6 - Proficiência em Línguas -->
+                        <div class="step" data-step="6" style="display: none;">
+                            <h4 class="modal-step-title">
+                                Proficiência em Línguas
+                                <small class="grupo-max-points">(Máx: 1,0 ponto)</small>
+                            </h4>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="proficiencia_ingles"
+                                        name="proficiencia_ingles">
+                                    <label class="custom-control-label" for="proficiencia_ingles">
+                                        Proficiência em língua inglesa
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Comprovada por certificado (exceto para nativos)"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="proficiencia_outra_lingua"
+                                        name="proficiencia_outra_lingua">
+                                    <label class="custom-control-label" for="proficiencia_outra_lingua">
+                                        Proficiência em outra língua estrangeira
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Diferente da língua inglesa e comprovada por certificado"></i>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="proficiencia_portugues"
+                                        name="proficiencia_portugues">
+                                    <label class="custom-control-label" for="proficiencia_portugues">
+                                        Proficiência em língua portuguesa
+                                        <i class="fas fa-info-circle info-tooltip" data-toggle="tooltip"
+                                            title="Comprovada por certificado (exceto para nativos)"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-anterior" id="prevStep" disabled>Anterior</button>
+                    <button type="button" class="btn btn-proximo" id="nextStep">Próximo</button>
+                    <button type="button" class="btn btn-analisar" id="submitForm" style="display: none;">
+                        Analisar Currículo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static"
+        data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="sr-only">Carregando...</span>
+                    </div>
+                    <h5>Analisando seu currículo...</h5>
+                    <p class="text-muted">Isso pode levar alguns segundos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Scripts necessários -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts para gerenciar o formulário -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const totalSteps = 6;
+            let currentStep = 1;
+
+            const modal = $('#simulacaoModal');
+            const form = $('#simulacaoForm');
+            const progressBar = $('#progressBar');
+            const loadingModal = $('#loadingModal');
+            const prevBtn = $('#prevStep');
+            const nextBtn = $('#nextStep');
+            const submitBtn = $('#submitForm');
+
+            // Inicializar tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // Botão para abrir o modal
+            $('#iniciarSimulacao').click(function () {
+                // Então abra o novo modal
+                $('#simulacaoModal').modal({
+                    backdrop: true,  // Permite fechar ao clicar fora
+                    keyboard: true,  // Permite fechar com ESC
+                    show: true
+                });
+                currentStep = 1;
+                updateStep(1);
+            });
+
+            // Adicionar evento quando o modal é fechado
+            $('#simulacaoModal').on('hidden.bs.modal', function () {
+                $(this).removeData('bs.modal');
+            });
+
+            // Atualizar o passo atual
+            function updateStep(step) {
+                $('.step').hide();
+                $(`.step[data-step="${step}"]`).show();
+
+                // Calcular e atualizar a porcentagem de progresso
+                const progress = (step / totalSteps) * 100;
+
+                progressBar
+                    .css('width', `${progress}%`)
+                    .attr('aria-valuenow', progress)
+                    .text(`${step}/${totalSteps}`);
+
+                // Controle dos botões
+                prevBtn.prop('disabled', step === 1);
+                if (step === totalSteps) {
+                    nextBtn.hide();
+                    submitBtn.show();
+                } else {
+                    nextBtn.show();
+                    submitBtn.hide();
+                }
+
+                // Atualizar currentStep
+                currentStep = step;
+            }
+
+            // Botão Anterior
+            prevBtn.click(function () {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateStep(currentStep);
+                }
+            });
+
+            // Botão Próximo
+            nextBtn.click(function () {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateStep(currentStep);
+                }
+            });
+
+            // Função para calcular a cor baseada na porcentagem
+            function getGradientColor(percentage) {
+                if (percentage < 50) {
+                    // Vermelho para laranja
+                    const ratio = percentage / 50;
+                    const r = 255;
+                    const g = Math.round(0 + 165 * ratio);
+                    const b = 0;
+                    return `rgb(${r}, ${g}, ${b})`;
+                } else {
+                    // Laranja para verde
+                    const ratio = (percentage - 50) / 50;
+                    const r = Math.round(255 * (1 - ratio));
+                    const g = Math.round(165 - 37 * ratio);
+                    const b = 0;
+                    return `rgb(${r}, ${g}, ${b})`;
+                }
+            }
+
+            // Função para determinar o texto do status
+            function getScoreText(score) {
+                if (score >= 9) return 'Excelente 🤩';
+                if (score >= 7) return 'Ótimo 😀';
+                if (score >= 5) return 'Bom 🙂';
+                if (score >= 3) return 'Regular 😐';
+                return 'Precisa melhorar 🤔';
+            }
+
+            // Enviar formulário
+            submitBtn.click(function () {
+                const formData = {};
+
+                // Coletar dados dos checkboxes
+                form.find('input[type="checkbox"]').each(function () {
+                    formData[this.name] = this.checked;
+                });
+
+                modal.modal('hide');
+                loadingModal.modal('show');
+
+                $.ajax({
+                    url: '/analisar_curriculo_feluma',  // URL correta
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),  // Enviando apenas os dados do formulário
+                    success: function (response) {
+                        loadingModal.modal('hide');
+                        try {
+                            const data = typeof response === 'string' ? JSON.parse(response) : response;
+
+                            if (data.error) {
+                                console.error('Erro na resposta:', data.message);
+                                alert('Erro ao processar análise: ' + data.message);
+                                return;
+                            }
+
+                            displayResults(data);
+                        } catch (e) {
+                            console.error('Erro ao processar resposta:', e);
+                            alert('Erro ao processar análise. Por favor, tente novamente.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        loadingModal.modal('hide');
+                        console.error('Erro na requisição:', error);
+                        alert('Erro ao processar análise. Por favor, tente novamente.');
+                    }
+                });
+            });
+
+            // Exibir resultados
+            function displayResults(data) {
+                const resultadoDiv = $('#resultadoAnalise');
+                const cardPrincipalDiv = $('#cardPrincipal');
+                const gruposDiv = $('#gruposAnalise');
+
+                // Limpar áreas
+                resultadoDiv.show();
+                cardPrincipalDiv.empty();
+                gruposDiv.empty();
+
+                // Calcular a pontuação total somando as pontuações dos grupos
+                const pontuacaoTotal = data.grupos.reduce((sum, grupo) => sum + grupo.pontuacao_obtida, 0);
+                const pontuacaoNormalizada = (pontuacaoTotal / 10) * 100;
+                const scoreColor = getGradientColor(pontuacaoNormalizada);
+                const scoreText = getScoreText(pontuacaoTotal);
+
+                // Card principal
+                const cardPrincipal = `
+        <div class="resultado-card mb-4">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <svg width="300" height="300" viewBox="0 0 300 300">
+                        <circle cx="150" cy="150" r="120" 
+                                fill="none" 
+                                stroke="#e0e0e0" 
+                                stroke-width="20"/>
+                        
+                        <circle cx="150" cy="150" r="120" 
+                                fill="none" 
+                                stroke="${scoreColor}"
+                                stroke-width="20"
+                                stroke-dasharray="${2 * Math.PI * 120}"
+                                stroke-dashoffset="${2 * Math.PI * 120 * (1 - pontuacaoNormalizada / 100)}"
+                                transform="rotate(-90 150 150)"
+                                class="progress-ring"/>
+                        
+                        <text x="150" y="140" 
+                              text-anchor="middle" 
+                              fill="#333" 
+                              font-size="60" 
+                              font-weight="bold"
+                              class="percentage-text">
+                            ${pontuacaoTotal.toFixed(1)}
+                        </text>
+                        <text x="150" y="180" 
+                              text-anchor="middle" 
+                              fill="#666" 
+                              font-size="24">
+                            pontos
+                        </text>
+                    </svg>
+                </div>
+
+                <div class="position-relative">
+                    <div class="progress mb-3" style="height: 40px; border-radius: 20px;">
+                        <div class="progress-bar" 
+                            role="progressbar" 
+                            style="width: ${pontuacaoNormalizada}%; background-color: ${scoreColor};"
+                            aria-valuenow="${pontuacaoNormalizada}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                            <span class="font-weight-bold text-white">${pontuacaoNormalizada.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-4">
+                    <span class="badge badge-pill px-4 py-2" 
+                          style="background-color: ${scoreColor}; color: white; font-size: 1rem;">
+                        ${scoreText}
+                    </span>
+                </div>
+
+                <div class="mt-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle" style="color: #00b3b3"></i>
+                        Feedback Geral
+                    </h5>
+                    <p class="mb-0">${data.feedback_geral}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+                cardPrincipalDiv.html(cardPrincipal);
+
+                // Ordenar os grupos
+                data.grupos.sort((a, b) => {
+                    const porcentagemA = (a.pontuacao_obtida / a.pontuacao_maxima) * 100;
+                    const porcentagemB = (b.pontuacao_obtida / b.pontuacao_maxima) * 100;
+
+                    if (porcentagemB !== porcentagemA) {
+                        return porcentagemB - porcentagemA; // Ordem decrescente
+                    } else {
+                        return b.pontuacao_obtida - a.pontuacao_obtida; // Ordem decrescente
+                    }
+                });
+
+                // Cards dos grupos
+                data.grupos.forEach(grupo => {
+                    const porcentagem = (grupo.pontuacao_obtida / grupo.pontuacao_maxima) * 100;
+                    const grupoColor = getGradientColor(porcentagem);
+
+                    const cardGrupo = `
+            <div class="resultado-card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            ${grupo.nome}
+                        </h5>
+                        <span class="badge badge-pill p-2 text-white" style="background-color: ${grupoColor};">
+                            ${grupo.pontuacao_obtida.toFixed(1)}/${grupo.pontuacao_maxima.toFixed(1)} pontos
+                        </span>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 30px; border-radius: 15px;">
+                        <div class="progress-bar" 
+                            role="progressbar" 
+                            style="width: ${porcentagem}%; background-color: ${grupoColor};"
+                            aria-valuenow="${grupo.pontuacao_obtida}"
+                            aria-valuemin="0"
+                            aria-valuemax="${grupo.pontuacao_maxima}">
+                            <span class="text-white">${Math.round(porcentagem)}%</span>
+                        </div>
+                    </div>
+                    
+                    <p class="card-text text-muted mb-3">
+                        ${grupo.feedback}
+                    </p>
+
+                    <div class="componentes-list">
+                        ${grupo.componentes.map((comp, index) => `
+                            <div class="componente-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span style="font-weight: 500">${comp.nome}</span>
+                                    <span class="badge badge-${comp.pontuacao > 0 ? 'success' : 'secondary'}">
+                                        ${comp.pontuacao.toFixed(1)} pontos
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+                    gruposDiv.append(cardGrupo);
+                });
+
+                // Scroll suave até os resultados
+                $('html, body').animate({
+                    scrollTop: resultadoDiv.offset().top - 20
+                }, 500);
+
+                // Adicionar animação ao círculo de progresso
+                setTimeout(() => {
+                    $('.progress-ring').css('transition', 'stroke-dashoffset 1s ease-in-out');
+                }, 100);
+            }
+        }); </script>
+
+    <!-- Scripts para animações -->
+    <script>
+        document.body.classList.add('fade-in');
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.querySelector('.sidebar');
+            const contentWrapper = document.querySelector('.content-wrapper');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            const toggleIcon = toggleBtn.querySelector('i');
+
+            toggleBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+                contentWrapper.classList.toggle('collapsed');
+
+                if (sidebar.classList.contains('collapsed')) {
+                    toggleIcon.classList.remove('fa-chevron-left');
+                    toggleIcon.classList.add('fa-chevron-right');
+                    this.setAttribute('data-tooltip', 'Expandir menu');
+                } else {
+                    toggleIcon.classList.remove('fa-chevron-right');
+                    toggleIcon.classList.add('fa-chevron-left');
+                    this.setAttribute('data-tooltip', 'Recolher menu');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
